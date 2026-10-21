@@ -113,6 +113,7 @@ const runnerProgressArea = document.getElementById('runnerProgressArea');
 const activeQuestTitle = document.getElementById('activeQuestTitle');
 const activeQuestProgressText = document.getElementById('activeQuestProgressText');
 const activeProgressBar = document.getElementById('activeProgressBar');
+const chkSkipGameQuests = document.getElementById('chkSkipGameQuests');
 
 // Quests Container
 const questsContainer = document.getElementById('questsContainer');
@@ -150,6 +151,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Load account history
   loadAccountsHistory();
+
+  // Load app settings
+  loadSettings();
 
   // Check for updates silently in the background
   checkForUpdates(false);
@@ -446,6 +450,37 @@ function setupEventListeners() {
       accountModal.classList.add('hidden');
     });
   }
+
+  // 10. SKIP GAME QUESTS TOGGLE
+  if (chkSkipGameQuests) {
+    chkSkipGameQuests.addEventListener('change', async () => {
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ skipGameQuests: chkSkipGameQuests.checked })
+        });
+        appendLog({
+          time: new Date().toLocaleTimeString('th-TH'),
+          message: chkSkipGameQuests.checked ? '⚡ เปิดใช้งาน: ข้ามเควสต์เล่นเกม (ทำเฉพาะเควสต์ดูเวลา/คลิป)' : '🎮 ปิดใช้งาน: อนุญาตให้ระบบทำเควสต์เล่นเกม',
+          type: 'info'
+        });
+      } catch (e) {}
+    });
+  }
+}
+
+// Load backend settings
+async function loadSettings() {
+  try {
+    const res = await fetch('/api/settings');
+    if (res.ok) {
+      const data = await res.json();
+      if (chkSkipGameQuests && typeof data.skipGameQuests === 'boolean') {
+        chkSkipGameQuests.checked = data.skipGameQuests;
+      }
+    }
+  } catch (e) {}
 }
 
 // --- Guide Modal Functions ---
@@ -735,8 +770,8 @@ function startQuestAutoRefresh() {
 
 function updateTabCounts() {
   countTabAll.textContent = currentQuests.length;
-  countTabVideo.textContent = currentQuests.filter(q => q.taskType.includes('VIDEO')).length;
-  countTabDesktop.textContent = currentQuests.filter(q => !q.taskType.includes('VIDEO')).length;
+  countTabVideo.textContent = currentQuests.filter(q => q.taskType.includes('VIDEO') || q.taskType.includes('WATCH')).length;
+  countTabDesktop.textContent = currentQuests.filter(q => !q.taskType.includes('VIDEO') && !q.taskType.includes('WATCH')).length;
   countTabCompleted.textContent = currentQuests.filter(q => q.isCompleted).length;
 }
 
@@ -746,9 +781,9 @@ function renderQuests() {
 
   let filtered = currentQuests;
   if (activeTab === 'video') {
-    filtered = currentQuests.filter(q => q.taskType.includes('VIDEO'));
+    filtered = currentQuests.filter(q => q.taskType.includes('VIDEO') || q.taskType.includes('WATCH'));
   } else if (activeTab === 'desktop') {
-    filtered = currentQuests.filter(q => !q.taskType.includes('VIDEO'));
+    filtered = currentQuests.filter(q => !q.taskType.includes('VIDEO') && !q.taskType.includes('WATCH'));
   } else if (activeTab === 'completed') {
     filtered = currentQuests.filter(q => q.isCompleted);
   }
@@ -770,15 +805,15 @@ function renderQuests() {
     // Type Badge
     let typeBadgeClass = 'badge-desktop';
     let typeLabel = q.taskType;
-    if (q.taskType.includes('VIDEO')) {
+    if (q.taskType.includes('VIDEO') || q.taskType.includes('WATCH')) {
       typeBadgeClass = 'badge-video';
-      typeLabel = 'VIDEO (AUTO)';
+      typeLabel = '🎬 ดูคลิป (Auto)';
     } else if (q.taskType.includes('STREAM')) {
       typeBadgeClass = 'badge-stream';
-      typeLabel = 'STREAM';
+      typeLabel = '📡 สตรีม';
     } else if (q.taskType.includes('PLAY')) {
       typeBadgeClass = 'badge-desktop';
-      typeLabel = 'GAME DESKTOP';
+      typeLabel = '🎮 เล่นเกม (ข้าม)';
     }
 
     // Status Badge

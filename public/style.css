@@ -1618,3 +1618,33 @@ body {
   gap: 6px;
   align-items: center;
 }
+
+/* ========================================================
+   Runner Filter Controls
+   ======================================================== */
+.skip-games-toggle {
+  font-size: 0.8rem;
+  color: var(--accent-cyan);
+  background: rgba(0, 255, 204, 0.08);
+  border: 1px solid rgba(0, 255, 204, 0.25);
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+}
+
+.skip-games-toggle:hover {
+  background: rgba(0, 255, 204, 0.15);
+  border-color: rgba(0, 255, 204, 0.45);
+}
+
+.runner-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}

@@ -14,6 +14,7 @@ let currentConfig = {
   token: '',
   autoEnroll: true,
   videoSpeed: 7, // seconds increment per pulse
+  skipGameQuests: true, // Only do watch/video quests, skip game playing quests
   accounts: []
 };
 
@@ -476,23 +477,55 @@ async function runAutoQuests(token) {
       return;
     }
 
+    // Identify Watch/Video quests vs Game Playing quests
+    const isWatchQuest = (q) => q.taskType.includes('VIDEO') || q.taskType.includes('WATCH') || q.taskType.includes('STREAM');
+    const watchQuests = pendingQuests.filter(isWatchQuest);
+    const gameQuests = pendingQuests.filter(q => !isWatchQuest(q));
+
+    let questsToRun = pendingQuests;
+    if (currentConfig.skipGameQuests !== false) {
+      questsToRun = watchQuests;
+      log(`⚡ การตั้งค่า: ข้ามเควสต์เล่นเกมทั้งหมด (${gameQuests.length} เควสต์) • ทำเฉพาะเควสต์ดูเวลา/วิดีโอ (${watchQuests.length} เควสต์)`, 'info');
+
+      // Auto Enroll all game quests so they are marked as accepted in Discord
+      if (currentConfig.autoEnroll && gameQuests.length > 0) {
+        log(`📝 กำลังกดรับ (Accept/Enroll) เควสต์เล่นเกม ${gameQuests.length} รายการให้อัตโนมัติ...`, 'info');
+        for (const gq of gameQuests) {
+          if (!gq.isEnrolled) {
+            try {
+              await enrollQuest(token, gq.id);
+              gq.isEnrolled = true;
+              log(`  -> กดรับเควสต์: "${gq.name}" (${gq.gameTitle}) สำเร็จ`, 'info');
+              await new Promise(r => setTimeout(r, 600));
+            } catch (e) {}
+          }
+        }
+      }
+
+      if (watchQuests.length === 0) {
+        log(`🎉 เควสต์ดูวิดีโอ/เวลาเสร็จสิ้นครบหมดแล้ว! (ข้ามเควสต์เล่นเกม ${gameQuests.length} รายการตามที่คุณต้องการ)`, 'success');
+        runnerState.isRunning = false;
+        return;
+      }
+    }
+
     // Sort: Video quests first
-    pendingQuests.sort((a, b) => {
+    questsToRun.sort((a, b) => {
       const aIsVid = a.taskType.includes('VIDEO') ? 1 : 0;
       const bIsVid = b.taskType.includes('VIDEO') ? 1 : 0;
       return bIsVid - aIsVid;
     });
 
-    runnerState.progress.total = pendingQuests.length;
+    runnerState.progress.total = questsToRun.length;
     runnerState.progress.done = 0;
 
-    for (let i = 0; i < pendingQuests.length; i++) {
+    for (let i = 0; i < questsToRun.length; i++) {
       if (runnerState.shouldStop) {
         log('⏹️ ผู้ใช้สั่งหยุดการทำงาน', 'warn');
         break;
       }
 
-      const q = pendingQuests[i];
+      const q = questsToRun[i];
       runnerState.currentQuest = q;
       runnerState.progress.currentName = q.name;
       runnerState.progress.currentType = q.taskType;
@@ -500,7 +533,7 @@ async function runAutoQuests(token) {
       runnerState.progress.targetSeconds = q.targetSeconds;
       runnerState.progress.percent = Math.floor((q.currentSeconds / (q.targetSeconds || 1)) * 100);
 
-      log(`\n📌 [${i + 1}/${pendingQuests.length}] เริ่มเควสต์: "${q.name}" (${q.taskType}) | เป้าหมาย: ${q.targetSeconds}s`, 'info');
+      log(`\n📌 [${i + 1}/${questsToRun.length}] เริ่มเควสต์: "${q.name}" (${q.taskType}) | เป้าหมาย: ${q.targetSeconds}s`, 'info');
 
       // 1. Auto Enroll
       if (!q.isEnrolled) {
@@ -735,6 +768,46 @@ const server = http.createServer(async (req, res) => {
       log(`🗑️ ลบบัญชีออกจากประวัติเรียบร้อยแล้ว`, 'info');
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ success: true }));
+    });
+    return;
+  }
+
+  // 4.3.1 Get Settings
+  if (pathname === '/api/settings' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({
+      skipGameQuests: currentConfig.skipGameQuests !== false,
+      autoEnroll: currentConfig.autoEnroll !== false,
+      videoSpeed: currentConfig.videoSpeed || 7
+    }));
+  }
+
+  // 4.3.2 Update Settings
+  if (pathname === '/api/settings' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      let data = {};
+      try { data = JSON.parse(body || '{}'); } catch {}
+      if (typeof data.skipGameQuests === 'boolean') {
+        currentConfig.skipGameQuests = data.skipGameQuests;
+      }
+      if (typeof data.autoEnroll === 'boolean') {
+        currentConfig.autoEnroll = data.autoEnroll;
+      }
+      if (typeof data.videoSpeed === 'number') {
+        currentConfig.videoSpeed = data.videoSpeed;
+      }
+      saveConfig();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: true,
+        settings: {
+          skipGameQuests: currentConfig.skipGameQuests,
+          autoEnroll: currentConfig.autoEnroll,
+          videoSpeed: currentConfig.videoSpeed
+        }
+      }));
     });
     return;
   }

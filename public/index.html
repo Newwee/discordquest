@@ -196,6 +196,10 @@
             </div>
           </div>
           <div class="runner-actions">
+            <label class="checkbox-label skip-games-toggle" title="ข้ามเควสต์ที่ต้องเปิดเกมทิ้งไว้ ทำเฉพาะเควสต์ดูวิดีโอ/คลิปที่นับเวลาอัตโนมัติ">
+              <input type="checkbox" id="chkSkipGameQuests" checked>
+              <span>ข้ามเควสต์เล่นเกม (ทำเฉพาะเควสต์ดูเวลา/คลิป)</span>
+            </label>
             <button id="btnStartAuto" class="btn btn-success btn-glow">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               เริ่มทำเควสต์อัตโนมัติ
@@ -226,9 +230,9 @@
         <div class="quests-nav-bar">
           <div class="tabs">
             <button class="tab-btn active" data-tab="all">ทั้งหมด (<span id="countTabAll">0</span>)</button>
-            <button class="tab-btn" data-tab="video">เควสต์คลิปวิดีโอ (<span id="countTabVideo">0</span>)</button>
-            <button class="tab-btn" data-tab="desktop">เควสต์เกม/สตรีม (<span id="countTabDesktop">0</span>)</button>
-            <button class="tab-btn" data-tab="completed">ทำเสร็จแล้ว (<span id="countTabCompleted">0</span>)</button>
+            <button class="tab-btn" data-tab="video">🎬 เควสต์ดูคลิป/เวลา (<span id="countTabVideo">0</span>)</button>
+            <button class="tab-btn" data-tab="desktop">🎮 เควสต์เล่นเกม (<span id="countTabDesktop">0</span>)</button>
+            <button class="tab-btn" data-tab="completed">✅ ทำเสร็จแล้ว (<span id="countTabCompleted">0</span>)</button>
           </div>
         </div>
 
