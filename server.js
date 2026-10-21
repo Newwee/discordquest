@@ -129,34 +129,29 @@ const runnerState = {
   }
 };
 
-// Rate Limit & Cache Shield for Quests
-const questsCache = {
-  raw: [],
-  parsed: [],
-  stats: null,
-  lastFetched: 0,
-  retryAfterUntil: 0
-};
+// Rate Limit & Cache Shield for Quests (Per-Token Map)
+const questsCacheMap = new Map();
 
-// Super Properties header spoofing Discord Desktop
-const SUPER_PROPERTIES = Buffer.from(JSON.stringify({
-  os: "Windows",
-  browser: "Discord Client",
-  release_channel: "stable",
-  client_version: "1.0.9175",
-  os_version: "10.0.22631",
-  os_arch: "x64",
-  system_locale: "th-TH",
-  client_build_number: 368521
-})).toString("base64");
+function getOrCreateTokenCache(token) {
+  const key = (token || '').trim();
+  if (!questsCacheMap.has(key)) {
+    questsCacheMap.set(key, {
+      raw: [],
+      parsed: [],
+      stats: null,
+      lastFetched: 0,
+      retryAfterUntil: 0
+    });
+  }
+  return questsCacheMap.get(key);
+}
 
 function getDiscordHeaders(token) {
   return {
     "Authorization": token.trim(),
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
     "Accept": "*/*",
-    "Content-Type": "application/json",
-    "X-Super-Properties": SUPER_PROPERTIES
+    "Content-Type": "application/json"
   };
 }
 
@@ -212,27 +207,43 @@ function computeQuestStats(parsed) {
   };
 }
 
-// Smart Quests Fetcher with Rate-Limit Shield
+// Smart Quests Fetcher with Rate-Limit Shield (Per-Token Cache)
 async function getOrFetchQuests(token, force = false) {
   if (!token) throw new Error('Token is missing');
+  const cache = getOrCreateTokenCache(token);
   const now = Date.now();
 
-  // 1. If currently in Rate-Limit window, return cached data
-  if (now < questsCache.retryAfterUntil) {
-    const remainingSec = Math.ceil((questsCache.retryAfterUntil - now) / 1000);
-    return {
-      quests: questsCache.parsed,
-      stats: questsCache.stats || computeQuestStats(questsCache.parsed),
-      rateLimited: true,
-      retryAfter: remainingSec
-    };
+  // 1. If currently in Rate-Limit window
+  if (now < cache.retryAfterUntil) {
+    const remainingSec = Math.ceil((cache.retryAfterUntil - now) / 1000);
+    // Return cached data if available
+    if (cache.parsed.length > 0) {
+      return {
+        quests: cache.parsed,
+        stats: cache.stats || computeQuestStats(cache.parsed),
+        rateLimited: true,
+        retryAfter: remainingSec
+      };
+    }
+    // If no cache and forced, wait for rate limit to expire
+    if (force && remainingSec <= 15) {
+      log(`⏳ รอให้คูลดาวน์ Discord หมดเวลา (${remainingSec}s) เพื่อโหลดข้อมูลเควสต์ชุดใหม่...`, 'info');
+      await new Promise(r => setTimeout(r, (remainingSec * 1000) + 1200));
+    } else {
+      return {
+        quests: cache.parsed,
+        stats: cache.stats || computeQuestStats(cache.parsed),
+        rateLimited: true,
+        retryAfter: remainingSec
+      };
+    }
   }
 
-  // 2. Return cache if fetched within 4 seconds (unless forced)
-  if (!force && questsCache.parsed.length > 0 && (now - questsCache.lastFetched) < 4000) {
+  // 2. Return cache if fetched within 12 seconds (unless forced)
+  if (!force && cache.parsed.length > 0 && (now - cache.lastFetched) < 12000) {
     return {
-      quests: questsCache.parsed,
-      stats: questsCache.stats || computeQuestStats(questsCache.parsed),
+      quests: cache.parsed,
+      stats: cache.stats || computeQuestStats(cache.parsed),
       rateLimited: false
     };
   }
@@ -245,12 +256,12 @@ async function getOrFetchQuests(token, force = false) {
 
     if (res.status === 429) {
       const errJson = await res.json().catch(() => ({}));
-      const retryAfter = errJson.retry_after || 7;
-      questsCache.retryAfterUntil = Date.now() + Math.ceil(retryAfter * 1000) + 1000;
-      log(`⏳ Discord แจ้ง Rate Limit คูลดาวน์ ${Math.ceil(retryAfter)} วินาที (สลับใช้ข้อมูลแคชชั่วคราว)...`, 'warn');
+      const retryAfter = errJson.retry_after || 8;
+      cache.retryAfterUntil = Date.now() + Math.ceil(retryAfter * 1000) + 1500;
+      log(`⏳ Discord แจ้ง Rate Limit คูลดาวน์ ${Math.ceil(retryAfter)} วินาที...`, 'warn');
       return {
-        quests: questsCache.parsed,
-        stats: questsCache.stats || computeQuestStats(questsCache.parsed),
+        quests: cache.parsed,
+        stats: cache.stats || computeQuestStats(cache.parsed),
         rateLimited: true,
         retryAfter: Math.ceil(retryAfter)
       };
@@ -266,10 +277,11 @@ async function getOrFetchQuests(token, force = false) {
     const parsed = rawList.map(parseQuestInfo);
     const stats = computeQuestStats(parsed);
 
-    questsCache.raw = rawList;
-    questsCache.parsed = parsed;
-    questsCache.stats = stats;
-    questsCache.lastFetched = Date.now();
+    cache.raw = rawList;
+    cache.parsed = parsed;
+    cache.stats = stats;
+    cache.lastFetched = Date.now();
+    cache.retryAfterUntil = 0;
 
     return {
       quests: parsed,
@@ -277,10 +289,10 @@ async function getOrFetchQuests(token, force = false) {
       rateLimited: false
     };
   } catch (err) {
-    if (questsCache.parsed.length > 0) {
+    if (cache.parsed.length > 0) {
       return {
-        quests: questsCache.parsed,
-        stats: questsCache.stats || computeQuestStats(questsCache.parsed),
+        quests: cache.parsed,
+        stats: cache.stats || computeQuestStats(cache.parsed),
         error: err.message
       };
     }
@@ -288,18 +300,18 @@ async function getOrFetchQuests(token, force = false) {
   }
 }
 
-// Parse Orbs and Quest Details accurately
+// Parse Orbs and Quest Details accurately (supports both snake_case and camelCase)
 function parseQuestInfo(quest) {
-  const config = quest.config ?? {};
-  const userStatus = quest.userStatus ?? {};
-  const questName = config.messages?.questName ?? quest.id;
-  const gameTitle = config.messages?.gameTitle ?? questName;
-  const expiresAt = config.expiresAt;
+  const config = quest.config || {};
+  const messages = config.messages || {};
+  const questName = messages.quest_name || messages.questName || config.application?.name || quest.id;
+  const gameTitle = messages.game_title || messages.gameTitle || questName;
+  const expiresAt = config.expires_at || config.expiresAt;
   const isExpired = expiresAt ? new Date(expiresAt).getTime() <= Date.now() : false;
 
-  // Task configuration
-  const taskConfig = config.taskConfig ?? config.taskConfigV2 ?? {};
-  const tasks = taskConfig.tasks ?? {};
+  // Task configuration (v2 or v1, snake_case or camelCase)
+  const taskConfig = config.task_config_v2 || config.task_config || config.taskConfigV2 || config.taskConfig || {};
+  const tasks = taskConfig.tasks || {};
   const taskKeys = Object.keys(tasks);
 
   // Supported task detection
@@ -307,42 +319,49 @@ function parseQuestInfo(quest) {
   let targetSeconds = 0;
   let currentSeconds = 0;
 
-  const supportedTypes = ["WATCH_VIDEO", "WATCH_VIDEO_ON_MOBILE", "PLAY_ON_DESKTOP", "STREAM_ON_DESKTOP", "PLAY_ACTIVITY"];
-  const matchedKey = supportedTypes.find(t => taskKeys.includes(t)) ?? taskKeys[0] ?? "UNKNOWN";
+  const priorityTasks = [
+    "WATCH_VIDEO",
+    "WATCH_VIDEO_ON_MOBILE",
+    "PLAY_ON_DESKTOP",
+    "STREAM_ON_DESKTOP",
+    "PLAY_ACTIVITY",
+    "PLAY_ON_XBOX",
+    "PLAY_ON_PLAYSTATION"
+  ];
+  const matchedKey = priorityTasks.find(t => taskKeys.includes(t)) || taskKeys[0] || "UNKNOWN";
   taskType = matchedKey;
-  targetSeconds = tasks[matchedKey]?.target ?? 0;
+  targetSeconds = tasks[matchedKey]?.target || 0;
 
   // Read current progress
-  const progressObj = userStatus.progress ?? {};
+  const userStatus = quest.user_status || quest.userStatus || {};
+  const progressObj = userStatus.progress || {};
   if (progressObj[matchedKey] && typeof progressObj[matchedKey].value === 'number') {
     currentSeconds = progressObj[matchedKey].value;
+  } else if (typeof userStatus.stream_progress_seconds === 'number') {
+    currentSeconds = userStatus.stream_progress_seconds;
   } else if (typeof userStatus.streamProgressSeconds === 'number') {
     currentSeconds = userStatus.streamProgressSeconds;
   }
 
   // Completion flags
-  const isEnrolled = !!userStatus.enrolledAt;
-  const isCompleted = !!userStatus.completedAt || (targetSeconds > 0 && currentSeconds >= targetSeconds);
-  const isClaimed = !!userStatus.claimedAt;
+  const isEnrolled = !!(userStatus.enrolled_at || userStatus.enrolledAt);
+  const isCompleted = !!(userStatus.completed_at || userStatus.completedAt) || (targetSeconds > 0 && currentSeconds >= targetSeconds);
+  const isClaimed = !!(userStatus.claimed_at || userStatus.claimedAt);
 
   // Orbs Calculation & Rewards
-  const rewards = config.rewardsConfig?.rewards ?? [];
+  const rewardsConfig = config.rewards_config || config.rewardsConfig || {};
+  const rewards = rewardsConfig.rewards || [];
   let orbs = 0;
   const rewardItems = [];
 
   for (const r of rewards) {
-    const name = r.messages?.name ?? r.messages?.nameWithArticle ?? "Reward";
+    const rMessages = r.messages || {};
+    const name = rMessages.name || rMessages.name_with_article || rMessages.nameWithArticle || "Reward";
     const type = r.type; // 4 = ORBS, 1 = IN_GAME, 3 = DECORATION
     let orbCount = 0;
 
-    if (type === 4 || /orb/i.test(name)) {
-      if (typeof r.orbQuantity === 'number') orbCount = r.orbQuantity;
-      else if (typeof r.quantity === 'number') orbCount = r.quantity;
-      else if (typeof r.amount === 'number') orbCount = r.amount;
-      else {
-        const m = name.match(/(\d+)\s*orb/i);
-        orbCount = m ? parseInt(m[1], 10) : 30;
-      }
+    if (type === 4 || (rMessages.name && /orb/i.test(rMessages.name))) {
+      orbCount = r.orb_quantity || r.orbQuantity || r.premium_orb_quantity || r.amount || r.quantity || 700;
       orbs += orbCount;
     }
 
@@ -359,7 +378,7 @@ function parseQuestInfo(quest) {
   if (isClaimed) {
     statusText = "CLAIMED";
   } else if (isCompleted) {
-    statusText = "READY_TO_CLAIM"; // Done, waiting for manual claim
+    statusText = "READY_TO_CLAIM";
   } else if (isEnrolled) {
     statusText = "IN_PROGRESS";
   }
@@ -379,7 +398,7 @@ function parseQuestInfo(quest) {
     statusText,
     orbs,
     rewards: rewardItems,
-    banner: config.assets?.hero ?? config.assets?.questBarHero ?? null
+    banner: config.assets?.hero || config.assets?.quest_bar_hero || config.assets?.questBarHero || null
   };
 }
 

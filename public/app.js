@@ -683,8 +683,9 @@ async function fetchData(token, showToast = false) {
     const syncLabel = document.querySelector('.sync-badge span:last-child');
     if (qData.rateLimited) {
       if (syncLabel) syncLabel.textContent = `คูลดาวน์ ${qData.retryAfter || 5}s`;
+      rateLimitCooldownUntil = Date.now() + ((qData.retryAfter || 5) * 1000) + 1500;
     } else {
-      if (syncLabel) syncLabel.textContent = 'ซิงค์สดทุก 5 วิ';
+      if (syncLabel) syncLabel.textContent = 'ซิงค์สดอัตโนมัติ';
     }
 
     currentQuests = qData.quests || [];
@@ -721,14 +722,15 @@ async function fetchData(token, showToast = false) {
   }
 }
 
-// Strict 5-second Auto-Refresh Loop
+// Smart Auto-Refresh Loop (Respects Rate Limit cooldowns)
+let rateLimitCooldownUntil = 0;
 function startQuestAutoRefresh() {
   questRefreshInterval = setInterval(() => {
     const token = tokenInput.value.trim();
-    if (token && !isFetchingQuests) {
+    if (token && !isFetchingQuests && Date.now() >= rateLimitCooldownUntil) {
       fetchData(token, false);
     }
-  }, 5000);
+  }, 12000);
 }
 
 function updateTabCounts() {
