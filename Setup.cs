@@ -141,7 +141,7 @@ namespace DiscordQuestAutoInstaller
                 Location = new Point(10, 20),
                 Size = new Size(505, 120),
                 Font = new Font("Segoe UI", 8.5F),
-                Text = "★ DISCORD QUEST AUTO v2.1.0 ★" + Environment.NewLine + Environment.NewLine +
+                Text = "★ DISCORD QUEST AUTO v2.2.0 ★" + Environment.NewLine + Environment.NewLine +
                        "• ระบบช่วยทำ Discord Quests อัตโนมัติในเครื่องของคุณ (Localhost Engine)" + Environment.NewLine +
                        "• รองรับเควสต์ดูคลิปวิดีโอ (WATCH_VIDEO) 100% โดยไม่ต้องเปิดคลิปแช่ทิ้งไว้" + Environment.NewLine +
                        "• คำนวณยอด Discord Orbs รวมแบบสดๆ และบอกว่ามีเควสต์ที่พร้อมเคลมกี่รางวัล" + Environment.NewLine +

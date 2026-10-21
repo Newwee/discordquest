@@ -147,12 +147,66 @@ function getOrCreateTokenCache(token) {
   return questsCacheMap.get(key);
 }
 
+// Discord Web Client Build Number & Super Properties Cache
+let cachedBuildNumber = 643186;
+let lastBuildFetchTime = 0;
+
+async function refreshDiscordBuildNumber() {
+  const now = Date.now();
+  if (cachedBuildNumber && (now - lastBuildFetchTime) < 3600000) {
+    return cachedBuildNumber;
+  }
+  try {
+    const res = await fetch('https://discord.com/app', {
+      headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36' }
+    });
+    const html = await res.text();
+    const scriptMatches = [...html.matchAll(/src="(\/assets\/[^"]+\.js)"/g)].map(m => 'https://discord.com' + m[1]);
+    for (const scriptUrl of scriptMatches) {
+      if (scriptUrl.includes('web.') || scriptUrl.includes('app.')) {
+        const sRes = await fetch(scriptUrl);
+        const code = await sRes.text();
+        const m = code.match(/buildNumber:"(\d+)"/i) || code.match(/BUILD_NUMBER:"?(\d+)"?/i) || code.match(/build_number:"?(\d+)"?/i);
+        if (m && m[1]) {
+          cachedBuildNumber = parseInt(m[1], 10);
+          lastBuildFetchTime = now;
+          break;
+        }
+      }
+    }
+  } catch (e) {
+    // Keep fallback 643186
+  }
+  return cachedBuildNumber;
+}
+
+function getSuperPropertiesBase64() {
+  const superProps = {
+    os: 'Windows',
+    browser: 'Chrome',
+    device: '',
+    system_locale: 'th-TH',
+    browser_user_agent: 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36',
+    browser_version: '133.0.0.0',
+    os_version: '10',
+    referrer: '',
+    referring_domain: '',
+    referrer_current: '',
+    referring_domain_current: '',
+    release_channel: 'stable',
+    client_build_number: cachedBuildNumber || 643186,
+    client_event_source: null
+  };
+  return Buffer.from(JSON.stringify(superProps)).toString('base64');
+}
+
 function getDiscordHeaders(token) {
   return {
     "Authorization": token.trim(),
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/133.0.0.0 Safari/537.36",
     "Accept": "*/*",
-    "Content-Type": "application/json"
+    "Content-Type": "application/json",
+    "X-Super-Properties": getSuperPropertiesBase64()
   };
 }
 
@@ -251,6 +305,7 @@ async function getOrFetchQuests(token, force = false) {
 
   // 3. Make Discord API request
   try {
+    await refreshDiscordBuildNumber();
     const res = await fetch('https://discord.com/api/v9/quests/@me', {
       headers: getDiscordHeaders(token)
     });
@@ -331,13 +386,17 @@ function parseQuestInfo(quest) {
   ];
   const matchedKey = priorityTasks.find(t => taskKeys.includes(t)) || taskKeys[0] || "UNKNOWN";
   taskType = matchedKey;
-  targetSeconds = tasks[matchedKey]?.target || 0;
+  targetSeconds = tasks[matchedKey]?.target || (tasks.WATCH_VIDEO ? tasks.WATCH_VIDEO.target : (tasks.WATCH_VIDEO_ON_MOBILE ? tasks.WATCH_VIDEO_ON_MOBILE.target : 0));
 
   // Read current progress
   const userStatus = quest.user_status || quest.userStatus || {};
   const progressObj = userStatus.progress || {};
   if (progressObj[matchedKey] && typeof progressObj[matchedKey].value === 'number') {
     currentSeconds = progressObj[matchedKey].value;
+  } else if (progressObj.WATCH_VIDEO && typeof progressObj.WATCH_VIDEO.value === 'number') {
+    currentSeconds = progressObj.WATCH_VIDEO.value;
+  } else if (progressObj.WATCH_VIDEO_ON_MOBILE && typeof progressObj.WATCH_VIDEO_ON_MOBILE.value === 'number') {
+    currentSeconds = progressObj.WATCH_VIDEO_ON_MOBILE.value;
   } else if (typeof userStatus.stream_progress_seconds === 'number') {
     currentSeconds = userStatus.stream_progress_seconds;
   } else if (typeof userStatus.streamProgressSeconds === 'number') {
@@ -408,7 +467,12 @@ async function enrollQuest(token, questId) {
   const res = await fetch(`https://discord.com/api/v9/quests/${questId}/enroll`, {
     method: 'POST',
     headers: getDiscordHeaders(token),
-    body: JSON.stringify({ location: 1 })
+    body: JSON.stringify({
+      location: 11,
+      is_targeted: false,
+      metadata_sealed: null,
+      traffic_metadata_sealed: null
+    })
   });
   if (!res.ok) {
     const errText = await res.text();
@@ -563,6 +627,10 @@ async function runAutoQuests(token) {
 
           try {
             const res = await sendVideoProgress(token, q.id, timestampPayload);
+            const serverVal = res?.progress?.[q.taskType]?.value ?? res?.progress?.WATCH_VIDEO?.value ?? res?.progress?.WATCH_VIDEO_ON_MOBILE?.value;
+            if (typeof serverVal === 'number' && serverVal > secDone) {
+              secDone = Math.min(target, serverVal);
+            }
             runnerState.progress.currentSeconds = secDone;
             runnerState.progress.percent = Math.floor((secDone / target) * 100);
 

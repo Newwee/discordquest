@@ -1,5 +1,5 @@
 ========================================================================
-                 DISCORD QUEST AUTO v2.1.0 - INSTALLER
+                 DISCORD QUEST AUTO v2.2.0 - INSTALLER
 ========================================================================
 GitHub Repository: https://github.com/Newwee/discordquest
 
