@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+  <title>Discord Quest Auto</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
+  <link rel="apple-touch-icon" href="logo.png">
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <!-- ReactBits: Aurora Background & Cyber Mesh Grid -->
+  <div class="aurora-ambient-bg">
+    <div class="aurora-blob blob-1"></div>
+    <div class="aurora-blob blob-2"></div>
+    <div class="aurora-blob blob-3"></div>
+    <div class="grid-overlay"></div>
+  </div>
+
+  <div class="app-container">
+    <!-- Top Navigation Bar -->
+    <header class="app-header spotlight-card">
+      <div class="logo-area">
+        <img src="logo.png" alt="Discord Quest Auto Logo" class="app-logo-img">
+        <div>
+          <h1 class="logo-title shiny-text">Discord Quest Auto</h1>
+          <span class="logo-sub">Localhost Automation Engine • Safe Mode (No AutoClaim)</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Live Sync 5s Badge -->
+        <div class="sync-badge" title="อัปเดตข้อมูลเควสต์อัตโนมัติทุกๆ 5 วินาที">
+          <span class="sync-dot"></span>
+          <span>ซิงค์สดทุก 5 วิ</span>
+        </div>
+
+        <!-- Open Discord Web Button -->
+        <button id="btnOpenDiscord" class="btn btn-discord" title="เปิด Discord Web ในเบราว์เซอร์หลัก">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor">
+            <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994.021-.041.001-.09-.041-.106a13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.929 1.793 8.18 1.793 12.061 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.894.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.028zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
+          </svg>
+          เปิด Discord Web
+        </button>
+
+        <!-- Account Switcher Button -->
+        <button id="btnAccountHistory" class="btn btn-secondary" title="ประวัติบัญชี Discord ที่บันทึกไว้">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          <span>บัญชี</span>
+          <span id="accountCountBadge" class="nav-count-badge hidden">0</span>
+        </button>
+
+        <!-- User Guide Button -->
+        <button id="btnOpenGuide" class="btn btn-secondary" title="คู่มือการใช้งานและวิธีใช้ระบบ">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+          คู่มือ
+        </button>
+
+        <!-- Check Update Button -->
+        <button id="btnCheckUpdate" class="btn btn-secondary btn-update-nav" title="ตรวจสอบเวอร์ชันใหม่จาก GitHub">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
+          <span>เช็คอัปเดต</span>
+          <span id="updateBadge" class="update-nav-badge hidden">NEW</span>
+        </button>
+
+        <div id="userBadge" class="user-badge hidden">
+          <img id="userAvatar" class="user-avatar" src="" alt="Avatar">
+          <div class="user-details">
+            <span id="userName" class="user-name">User</span>
+            <span class="user-status-dot"></span>
+          </div>
+        </div>
+
+        <button id="btnRefresh" class="btn btn-secondary" title="ดึงข้อมูลเควสต์ใหม่ทันที">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          รีเฟรช
+        </button>
+        <button id="btnShutdown" class="btn btn-danger-outline" title="ปิดระบบเซิร์ฟเวอร์">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M18.36 6.64a9 9 0 1 1-12.73 0M12 2v10"/></svg>
+          ปิดเซิร์ฟเวอร์
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Grid -->
+    <main class="main-content">
+      <!-- Token Input Card (ReactBits: Spotlight Card) -->
+      <section class="card token-card spotlight-card">
+        <div class="card-header">
+          <div class="token-title-row">
+            <h2>🔑 Discord User Token</h2>
+            <span class="tag-local">LOCAL ONLY (127.0.0.1)</span>
+          </div>
+          <button id="btnToggleHelp" class="btn-text">วิธีหา Token แบบ Manual ?</button>
+        </div>
+        
+        <div class="token-input-row">
+          <div class="input-wrapper">
+            <input type="password" id="tokenInput" placeholder="กรอก Token ID หรือกดปุ่ม 'ดึง Token อัตโนมัติ' ด้านขวา..." autocomplete="off">
+            <button id="btnToggleTokenVisibility" class="btn-icon" title="แสดง/ซ่อน Token">
+              <svg id="eyeIcon" viewBox="0 0 24 24" width="18" height="18" stroke="currentColor" stroke-width="2" fill="none"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            </button>
+          </div>
+
+          <!-- AUTO TOKEN BUTTON (ReactBits: Shiny Pill) -->
+          <button id="btnAutoToken" class="btn btn-cyan btn-glow" title="สแกนหา Token จาก Discord Desktop / Browser ในเครื่องโดยตรง">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+            ดึง Token อัตโนมัติ
+          </button>
+
+          <button id="btnConnect" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+            ดึงข้อมูลเควสต์
+          </button>
+        </div>
+
+        <div id="tokenHelpBox" class="help-box hidden">
+          <h4>💡 วิธีดึง Discord Token ด้วยตัวเอง (Manual):</h4>
+          <ol>
+            <li>เปิด Discord ใน Browser (เช่น Chrome, Edge) หรือ Discord Desktop App</li>
+            <li>กดปุ่ม <code>Ctrl + Shift + I</code> (หรือ F12) เพื่อเปิด Developer Tools</li>
+            <li>คลิกแท็บ <strong>Console</strong> แล้ววางโค้ดนี้ลงไป แล้วกด Enter:</li>
+          </ol>
+          <div class="code-copy-box">
+            <code>(webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()</code>
+            <button id="btnCopySnippet" class="btn btn-small">คัดลอกโค้ด</button>
+          </div>
+          <p class="text-muted">คัดลอกข้อความในเครื่องหมายคำพูด แล้วนำมาวางในช่อง Token ด้านบน</p>
+        </div>
+      </section>
+
+      <!-- Stats Overview Row (ReactBits: Spotlight Grid) -->
+      <section class="stats-grid">
+        <div class="stat-card spotlight-card">
+          <div class="stat-icon icon-blue">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">เควสต์ทั้งหมด</span>
+            <span id="statTotalQuests" class="stat-val count-animate">0</span>
+          </div>
+        </div>
+
+        <div class="stat-card spotlight-card">
+          <div class="stat-icon icon-green">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">ทำเสร็จแล้ว</span>
+            <span id="statCompletedQuests" class="stat-val count-animate">0</span>
+            <span id="statReadyToClaimSub" class="stat-sub">(รอเคลมใน Discord: 0)</span>
+          </div>
+        </div>
+
+        <div class="stat-card spotlight-card">
+          <div class="stat-icon icon-amber">
+            <svg viewBox="0 0 24 24" width="22" height="22" stroke="currentColor" stroke-width="2" fill="none"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">ที่ต้องทำต่อ</span>
+            <span id="statPendingQuests" class="stat-val count-animate">0</span>
+          </div>
+        </div>
+
+        <!-- ORBS CALCULATOR CARD (ReactBits: Border Beam Effect) -->
+        <div class="stat-card stat-card-orbs spotlight-card border-beam-card">
+          <div class="orb-badge-glow">
+            <svg viewBox="0 0 24 24" width="24" height="24" fill="#00ffcc"><circle cx="12" cy="12" r="9"/></svg>
+          </div>
+          <div class="stat-info">
+            <span class="stat-label">คำนวณ Discord Orbs รวม</span>
+            <div class="orbs-val-row">
+              <span id="statTotalOrbs" class="stat-val orbs-val shiny-text">0</span>
+              <span class="orbs-unit">ORBS</span>
+            </div>
+            <div class="orbs-breakdown">
+              <span title="เควสต์เสร็จแล้ว พร้อมกดรับใน Discord">เคลมได้ทันที: <b id="statClaimableOrbs" class="text-green">0</b></span>
+              <span class="bullet">•</span>
+              <span title="ต้องทำต่อเพื่อรับ Orbs">รอทำ: <b id="statPendingOrbs" class="text-amber">0</b></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Active Runner Status Section (ReactBits: Border Beam Animated Card) -->
+      <section class="card runner-card spotlight-card border-beam-card">
+        <div class="runner-header">
+          <div class="runner-title-group">
+            <div id="runnerPulse" class="pulse-indicator idle"></div>
+            <div>
+              <h3 class="runner-heading">ขณะนี้กำลังทำอะไรอยู่</h3>
+              <p id="runnerSubtext" class="text-muted">ระบบพร้อมทำงาน กด "เริ่มทำเควสต์อัตโนมัติ" เพื่อเริ่มต้น</p>
+            </div>
+          </div>
+          <div class="runner-actions">
+            <button id="btnStartAuto" class="btn btn-success btn-glow">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              เริ่มทำเควสต์อัตโนมัติ
+            </button>
+            <button id="btnStopAuto" class="btn btn-danger hidden">
+              <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
+              หยุดชั่วคราว
+            </button>
+          </div>
+        </div>
+
+        <!-- Progress Bar & Active Quest Details -->
+        <div id="runnerProgressArea" class="runner-progress-box hidden">
+          <div class="progress-info-row">
+            <span id="activeQuestTitle" class="active-quest-name">Quest Running</span>
+            <span id="activeQuestProgressText" class="active-quest-numbers">0s / 0s (0%)</span>
+          </div>
+          <div class="progress-bar-track">
+            <div id="activeProgressBar" class="progress-bar-fill" style="width: 0%;">
+              <span class="progress-bar-glow"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Quests Section -->
+      <section class="card quests-section spotlight-card">
+        <div class="quests-nav-bar">
+          <div class="tabs">
+            <button class="tab-btn active" data-tab="all">ทั้งหมด (<span id="countTabAll">0</span>)</button>
+            <button class="tab-btn" data-tab="video">เควสต์คลิปวิดีโอ (<span id="countTabVideo">0</span>)</button>
+            <button class="tab-btn" data-tab="desktop">เควสต์เกม/สตรีม (<span id="countTabDesktop">0</span>)</button>
+            <button class="tab-btn" data-tab="completed">ทำเสร็จแล้ว (<span id="countTabCompleted">0</span>)</button>
+          </div>
+        </div>
+
+        <div id="questsContainer" class="quests-grid">
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" width="48" height="48" stroke="currentColor" stroke-width="1.5" fill="none"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>
+            <p>ยังไม่มีข้อมูลเควสต์ กรุณากด "ดึง Token อัตโนมัติ" หรือใส่ Token เพื่อเริ่มต้น</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Console Logs Window (ReactBits: Hacker Terminal) -->
+      <section class="card console-card spotlight-card">
+        <div class="console-header">
+          <div class="console-title">
+            <span class="terminal-dot red"></span>
+            <span class="terminal-dot yellow"></span>
+            <span class="terminal-dot green"></span>
+            <span>Live Automation Terminal</span>
+          </div>
+          <div class="console-tools">
+            <label class="checkbox-label">
+              <input type="checkbox" id="chkAutoScroll" checked> เลื่อนอัตโนมัติ
+            </label>
+            <button id="btnClearLogs" class="btn btn-small btn-secondary">ล้างหน้าจอ</button>
+            <button id="btnCopyLogs" class="btn btn-small btn-secondary">คัดลอก Log</button>
+          </div>
+        </div>
+        <div id="consoleLogContainer" class="console-body">
+          <div class="log-entry info"><span class="log-time">[System]</span> ยินดีต้อนรับสู่ Discord Quest Auto WebApp v2.0 (ReactBits Theme Edition)</div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="app-footer">
+      <span>Discord Quest Auto • ปลอดภัย 100% ภายในเครื่อง Localhost (127.0.0.1) • ไม่มีการ AutoClaim เพื่อเลี่ยง Captcha/Ban</span>
+    </footer>
+  </div>
+
+  <!-- SECURITY CONFIRMATION MODAL -->
+  <div id="tokenConfirmModal" class="modal-backdrop hidden">
+    <div class="modal-card border-beam-card">
+      <div class="modal-header">
+        <div class="modal-icon-shield">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#00ffcc" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <h3 class="shiny-text">การยืนยันดึง Token อัตโนมัติ</h3>
+      </div>
+      <div class="modal-body">
+        <p>ระบบจะทำการสแกนหา Discord Token ที่เข้าสู่ระบบอยู่ในเครื่องนี้โดยตรง (Discord Desktop & Web Browsers)</p>
+        <div class="modal-security-points">
+          <div class="point-item">
+            <span class="point-badge">🔒 Local Only</span>
+            <span>ทำงานเฉพาะในเครื่อง <code>127.0.0.1</code> ของคุณ ไม่มีการส่งข้อมูล Token ออกไปภายนอกเด็ดขาด</span>
+          </div>
+          <div class="point-item">
+            <span class="point-badge">⚡ Auto Setup</span>
+            <span>เมื่อดึงสำเร็จจะเริ่มโหลดเควสต์และคำนวณ Discord Orbs ให้อัตโนมัติทันที</span>
+          </div>
+        </div>
+        <p class="modal-subtext">คุณต้องการยืนยันและอนุญาตให้ระบบดึง Token ใช่หรือไม่?</p>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCancelAutoToken" class="btn btn-secondary">ยกเลิก</button>
+        <button id="btnApproveAutoToken" class="btn btn-success btn-glow">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z"/></svg>
+          ยืนยันและอนุญาต
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- REAL-TIME CYBER LOADING OVERLAY (หมุนๆ ตามเวลาจริง) -->
+  <div id="globalLoader" class="loader-backdrop hidden">
+    <div class="loader-card border-beam-card spotlight-card">
+      <div class="cyber-spinner-wrapper">
+        <div class="cyber-spinner-outer"></div>
+        <div class="cyber-spinner-inner"></div>
+        <div class="cyber-spinner-center">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="#00ffcc">
+            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+          </svg>
+        </div>
+      </div>
+      <div class="loader-info">
+        <h3 id="loaderTitle" class="loader-title shiny-text">กำลังดำเนินการ...</h3>
+        <p id="loaderSubtext" class="loader-subtext">กรุณารอสักครู่ ระบบกำลังประมวลผล</p>
+      </div>
+      <div class="loader-timer-badge">
+        <span class="sync-dot"></span>
+        <span>เวลาที่ใช้: <b id="loaderTimer">0.0s</b></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- USER ONBOARDING / GUIDE MODAL (คู่มือการใช้งาน) -->
+  <div id="guideModal" class="modal-backdrop hidden">
+    <div class="modal-card guide-modal-card border-beam-card">
+      <div class="modal-header">
+        <div class="modal-icon-shield guide-icon">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#00ffcc" stroke-width="2">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="shiny-text">📖 คู่มือการใช้งาน Discord Quest Auto</h3>
+          <p class="modal-subheading">ระบบช่วยทำเควสต์ Discord อัตโนมัติ รวดเร็ว และปลอดภัยสูงสุด</p>
+        </div>
+      </div>
+      <div class="modal-body guide-body">
+        <div class="guide-steps-grid">
+          <div class="guide-step-card">
+            <div class="guide-step-num">1</div>
+            <div class="guide-step-content">
+              <h4>🔑 เชื่อมต่อบัญชี Discord ในคลิกเดียว</h4>
+              <p>กดปุ่ม <b>"ดึง Token อัตโนมัติ"</b> ระบบจะค้นหา Session ในเครื่องและล็อกอินให้ทันที หรือจะก๊อปปี้ Token มาใส่เองก็ได้</p>
+            </div>
+          </div>
+
+          <div class="guide-step-card">
+            <div class="guide-step-num">2</div>
+            <div class="guide-step-content">
+              <h4>🛡️ ปลอดภัย 100% ด้วย Safe Mode</h4>
+              <p>โปรแกรมทำงานเฉพาะในเครื่องคุณ (Localhost) และ<b>ไม่มีการกดเคลมของรางวัลอัตโนมัติ</b> เพื่อป้องกัน Captcha และความเสี่ยงถูกแบน</p>
+            </div>
+          </div>
+
+          <div class="guide-step-card">
+            <div class="guide-step-num">3</div>
+            <div class="guide-step-content">
+              <h4>⚡ เควสต์ดูคลิปวิดีโอ (Video Watch Quests)</h4>
+              <p>รองรับเควสต์ดูคลิปอย่างสมบูรณ์แบบ วิดีโอจะถูกรันจบโดยอัตโนมัติด้วยความเร็วสูง พร้อมแสดงแถบความคืบหน้าแบบวินาทีต่อวินาที</p>
+            </div>
+          </div>
+
+          <div class="guide-step-card">
+            <div class="guide-step-num">4</div>
+            <div class="guide-step-content">
+              <h4>🔄 ซิงค์สดทุก 5 วินาที & คำนวณ Orbs</h4>
+              <p>มีระบบ Rate-Limit Shield ป้องกัน Error 429 พร้อมคำนวณแต้ม Discord Orbs รวมแบบสดๆ แยกยอดที่เคลมได้ทันทีและยอดรอทำ</p>
+            </div>
+          </div>
+
+          <div class="guide-step-card">
+            <div class="guide-step-num">5</div>
+            <div class="guide-step-content">
+              <h4>👥 ประวัติบัญชี & สลับไอดี (Account Switcher)</h4>
+              <p>ทุกบัญชีที่เคยล็อกอินจะถูกบันทึกไว้อย่างปลอดภัย คุณสามารถกดปุ่ม "บัญชี" เพื่อสลับไอดีได้ทันที ไม่ต้องพิมพ์ Token ใหม่</p>
+            </div>
+          </div>
+
+          <div class="guide-step-card">
+            <div class="guide-step-num">6</div>
+            <div class="guide-step-content">
+              <h4>🚀 อัปเดตอัตโนมัติจาก GitHub</h4>
+              <p>เชื่อมต่อกับ GitHub เมื่อมีเวอร์ชันใหม่จะมีจุดแจ้งเตือนขึ้นที่ปุ่ม "เช็คอัปเดต" สามารถกดดู Changelog และดาวน์โหลดได้ทันที</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="guide-footer-check">
+          <label class="checkbox-label guide-dont-show">
+            <input type="checkbox" id="chkDontShowGuideAgain">
+            <span>ไม่ต้องแสดงคู่มือนี้ตอนเปิดโปรแกรมอีก (เปิดดูได้ตลอดเวลาจากปุ่ม "คู่มือ" ด้านบน)</span>
+          </label>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCloseGuide" class="btn btn-primary btn-glow" style="width: 100%;">
+          เข้าใจแล้ว เริ่มต้นใช้งาน Discord Quest Auto 🚀
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- GITHUB UPDATE MODAL (ตรวจสอบอัปเดต) -->
+  <div id="updateModal" class="modal-backdrop hidden">
+    <div class="modal-card update-modal-card border-beam-card">
+      <div class="modal-header">
+        <div class="modal-icon-shield icon-cyan">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#00ffcc" stroke-width="2">
+            <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="shiny-text">⚡ ตรวจสอบการอัปเดตโปรแกรม</h3>
+          <p class="modal-subheading">เชื่อมต่อกับ GitHub: <a href="https://github.com/Newwee/discordquest" target="_blank" class="text-cyan">Newwee/discordquest</a></p>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="update-version-row">
+          <div class="version-badge-box">
+            <span class="version-label">เวอร์ชันของคุณ</span>
+            <span id="currentVersionTag" class="version-val">v2.1.0</span>
+          </div>
+          <div class="version-arrow">➜</div>
+          <div class="version-badge-box">
+            <span class="version-label">เวอร์ชันล่าสุดบน GitHub</span>
+            <span id="latestVersionTag" class="version-val text-cyan">กำลังเช็ค...</span>
+          </div>
+        </div>
+
+        <div id="updateStatusBanner" class="update-status-banner info">
+          <span class="sync-dot"></span>
+          <span id="updateStatusText">กำลังเชื่อมต่อกับ GitHub...</span>
+        </div>
+
+        <div class="changelog-container">
+          <h4 class="changelog-title">📋 รายละเอียดและสิ่งที่เพิ่มเข้ามา (Release Notes):</h4>
+          <ul id="changelogList" class="changelog-list">
+            <li>กำลังโหลดข้อมูล...</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer update-modal-footer">
+        <button id="btnCheckUpdateAgain" class="btn btn-secondary">
+          <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
+          ตรวจสอบอีกครั้ง
+        </button>
+        <button id="btnDownloadUpdate" class="btn btn-cyan btn-glow hidden">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
+          ไปที่หน้าดาวน์โหลด / GitHub Release
+        </button>
+        <button id="btnCloseUpdateModal" class="btn btn-secondary">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACCOUNT HISTORY & SWITCHER MODAL (ประวัติบัญชี) -->
+  <div id="accountModal" class="modal-backdrop hidden">
+    <div class="modal-card account-modal-card border-beam-card">
+      <div class="modal-header">
+        <div class="modal-icon-shield icon-blurple">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#5865F2" stroke-width="2">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="shiny-text">👥 ประวัติบัญชี Discord ที่เคยเข้าสู่ระบบ</h3>
+          <p class="modal-subheading">เลือกบัญชีที่ต้องการเพื่อสลับทำงานได้ทันที โดยไม่ต้องพิมพ์ Token ใหม่</p>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div id="accountListContainer" class="account-list">
+          <div class="empty-state">
+            <p>ยังไม่มีประวัติบัญชีที่บันทึกไว้</p>
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCloseAccountModal" class="btn btn-secondary" style="width: 100%;">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

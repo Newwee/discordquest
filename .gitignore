@@ -1,0 +1,14 @@
+# Discord User Configuration (Contains private user tokens)
+config.json
+
+# Temporary build archives & logs
+*.log
+payload.zip
+.system_generated/
+node_modules/
+
+# OS and Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

@@ -1,0 +1,13 @@
+{
+  "version": "2.1.0",
+  "name": "Discord Quest Auto",
+  "releaseDate": "2026-10-21",
+  "githubRepo": "https://github.com/Newwee/discordquest",
+  "releaseNotes": [
+    "🚀 ระบบตรวจสอบและแจ้งเตือนอัปเดตอัตโนมัติจาก GitHub (Newwee/discordquest)",
+    "📖 เพิ่มคู่มือการใช้งานแบบโต้ตอบ (Interactive User Guide) สำหรับผู้ใช้ใหม่",
+    "💾 ระบบบันทึกประวัติบัญชี (Account History & Switcher) สลับไอดี Discord ได้ทันที",
+    "🛡️ Rate-Limit Shield ป้องกัน Error 429 พร้อม Auto-Refresh เควสต์ทุก 5 วินาที",
+    "🎨 ปรับปรุง Cyber UI รองรับทุกสเกลจอภาพ (1:1, 16:9, 4:3, Mobile)"
+  ]
+}
