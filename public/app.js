@@ -368,16 +368,6 @@ function setupEventListeners() {
       setTimeout(hideLoader, 600);
     }
   });
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token })
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error);
-      setRunnerActive(true);
-    } catch (e) {
-      alert(`ไม่สามารถเริ่มได้: ${e.message}`);
-    }
-  });
 
   // 5. STOP AUTO RUNNER
   btnStopAuto.addEventListener('click', async () => {
