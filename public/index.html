@@ -125,10 +125,10 @@
             <li>คลิกแท็บ <strong>Console</strong> แล้ววางโค้ดนี้ลงไป แล้วกด Enter:</li>
           </ol>
           <div class="code-copy-box">
-            <code>(webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()</code>
+            <code>(()=>{let t;webpackChunkdiscord_app.push([[Symbol()],{},r=>{for(let k in r.c){let m=r.c[k]?.exports;for(let o of[m,m?.default,m?.Z,m?.ZP,m?.A])try{if(typeof o?.getToken==='function'){t=o.getToken();if(t)break;}}catch(e){}}if(t)break;}]);webpackChunkdiscord_app.pop();copy(t);console.log('%cTOKEN COPIED: %c'+t,'color:#00ffcc;font-weight:bold;','color:#ffff00;font-weight:bold;');return t;})()</code>
             <button id="btnCopySnippet" class="btn btn-small">คัดลอกโค้ด</button>
           </div>
-          <p class="text-muted">คัดลอกข้อความในเครื่องหมายคำพูด แล้วนำมาวางในช่อง Token ด้านบน</p>
+          <p class="text-muted">เมื่อกด Enter ระบบจะคัดลอก Token ลง Clipboard ให้ทันที นำมาวางในช่อง Token ได้เลย</p>
         </div>
       </section>
 

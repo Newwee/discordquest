@@ -610,14 +610,22 @@ const server = http.createServer(async (req, res) => {
       const extracted = await findLocalDiscordToken();
       if (extracted.success && extracted.token) {
         currentConfig.token = extracted.token;
-        if (extracted.user) upsertAccount(extracted.user, extracted.token);
+        if (Array.isArray(extracted.allAccounts)) {
+          for (const acc of extracted.allAccounts) {
+            upsertAccount(acc.user, acc.token);
+          }
+        } else if (extracted.user) {
+          upsertAccount(extracted.user, extracted.token);
+        }
         saveConfig();
-        log(`🔑 ตรวจพบและยืนยัน Token ของผู้ใช้ @${extracted.user?.username || 'User'} สำเร็จ!`, 'success');
+        log(`🔑 ตรวจพบและยืนยัน Token ของผู้ใช้ @${extracted.user?.username || 'User'} จาก ${extracted.source || 'Web Browser'} สำเร็จ!`, 'success');
         res.writeHead(200, { 'Content-Type': 'application/json' });
         return res.end(JSON.stringify({
           success: true,
           token: extracted.token,
-          user: extracted.user
+          user: extracted.user,
+          source: extracted.source,
+          accountsCount: extracted.allAccounts?.length || 1
         }));
       } else {
         log(`⚠️ ดึง Token อัตโนมัติไม่สำเร็จ: ${extracted.message}`, 'warn');

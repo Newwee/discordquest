@@ -256,7 +256,7 @@ function setupEventListeners() {
   });
 
   btnCopySnippet.addEventListener('click', () => {
-    const code = "(webpackChunkdiscord_app.push([[''],{},e=>{m=[];for(let c in e.c)m.push(e.c[c])}]),m).find(m=>m?.exports?.default?.getToken!==void 0).exports.default.getToken()";
+    const code = "(()=>{let t;webpackChunkdiscord_app.push([[Symbol()],{},r=>{for(let k in r.c){let m=r.c[k]?.exports;for(let o of[m,m?.default,m?.Z,m?.ZP,m?.A])try{if(typeof o?.getToken==='function'){t=o.getToken();if(t)break;}}catch(e){}}if(t)break;}]);webpackChunkdiscord_app.pop();copy(t);console.log('%cTOKEN COPIED: %c'+t,'color:#00ffcc;font-weight:bold;','color:#ffff00;font-weight:bold;');return t;})()";
     navigator.clipboard.writeText(code);
     btnCopySnippet.textContent = 'คัดลอกแล้ว!';
     setTimeout(() => { btnCopySnippet.textContent = 'คัดลอกโค้ด'; }, 2000);
