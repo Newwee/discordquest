@@ -1,0 +1,865 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>License Key Activation | ยืนยันสิทธิ์การใช้งาน</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@500;700&family=Prompt:wght@400;500;600;700&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
+
+  <style>
+    /* =========================================================
+       1. DESIGN TOKENS & CSS VARIABLES
+       ========================================================= */
+    :root {
+      --bg-color: #0a0c10;
+      --card-bg: #12161f;
+      --card-border: #1f2632;
+      --input-border: #242c3a;
+      --input-bg: #0c0f14;
+      
+      --accent-purple: #7c5cff;
+      --accent-purple-hover: #6a46fa;
+      --accent-soft: rgba(124, 92, 255, 0.15);
+      --accent-glow: rgba(124, 92, 255, 0.35);
+      --accent-banner: rgba(124, 92, 255, 0.08);
+      --accent-disclaimer-bg: rgba(124, 92, 255, 0.06);
+      --accent-disclaimer-border: rgba(124, 92, 255, 0.2);
+
+      --text-primary: #e8ebf1;
+      --text-muted: #8a93a5;
+      --text-faint: #4d5565;
+
+      --error-red: #ef4444;
+      --error-soft: rgba(239, 68, 68, 0.12);
+      --error-text: #fca5a5;
+      --error-border: #ef4444;
+
+      --success-green: #10b981;
+      --success-soft: rgba(16, 185, 129, 0.12);
+      --success-text: #6ee7b7;
+
+      --font-sans: 'Space Grotesk', 'Prompt', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      --font-mono: 'JetBrains Mono', 'Consolas', 'Courier New', monospace;
+    }
+
+    /* =========================================================
+       2. RESET & GLOBAL STYLES
+       ========================================================= */
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      overflow-x: hidden;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: clamp(12px, 3vw, 24px);
+      background-image: 
+        radial-gradient(circle at 50% 0%, rgba(124, 92, 255, 0.14) 0%, transparent 60%),
+        radial-gradient(circle at 100% 100%, rgba(124, 92, 255, 0.06) 0%, transparent 40%),
+        radial-gradient(circle at 0% 100%, rgba(12, 15, 20, 0.8) 0%, transparent 50%);
+    }
+
+    /* Subtle background grid pattern */
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background-size: 32px 32px;
+      background-image: linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                        linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* =========================================================
+       3. RESPONSIVE CARD CONTAINER
+       ========================================================= */
+    .license-card {
+      position: relative;
+      z-index: 1;
+      width: min(94vw, 480px);
+      max-width: 480px;
+      max-height: 94vh;
+      overflow-y: auto;
+      border-radius: 20px;
+      border: 1px solid var(--card-border);
+      background: var(--card-bg);
+      box-shadow: 0 30px 90px rgba(0, 0, 0, 0.85), 0 0 1px 1px rgba(255, 255, 255, 0.05) inset;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      display: flex;
+      flex-direction: column;
+      animation: cardAppear 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+    }
+
+    @keyframes cardAppear {
+      from {
+        opacity: 0;
+        transform: translateY(18px) scale(0.98);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    /* Custom Slim Scrollbar for Card */
+    .license-card::-webkit-scrollbar {
+      width: 5px;
+    }
+    .license-card::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    .license-card::-webkit-scrollbar-thumb {
+      background: #1f2632;
+      border-radius: 4px;
+    }
+    .license-card::-webkit-scrollbar-thumb:hover {
+      background: #2b3546;
+    }
+
+    /* =========================================================
+       4. HEADER SECTION
+       ========================================================= */
+    .card-header {
+      padding: clamp(24px, 5vw, 32px) clamp(20px, 4vw, 28px) 20px clamp(20px, 4vw, 28px);
+      background: linear-gradient(180deg, var(--accent-banner) 0%, transparent 100%);
+      border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .logo-badge {
+      width: 54px;
+      height: 54px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #1d1b32 0%, #151624 100%);
+      border: 1px solid rgba(124, 92, 255, 0.35);
+      box-shadow: 0 0 24px rgba(124, 92, 255, 0.25), 0 4px 12px rgba(0, 0, 0, 0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 16px;
+      color: var(--accent-purple);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .logo-badge:hover {
+      transform: translateY(-2px) scale(1.04);
+      box-shadow: 0 0 32px rgba(124, 92, 255, 0.4);
+    }
+
+    .app-title {
+      font-size: 20px;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: -0.3px;
+      line-height: 1.3;
+    }
+
+    .app-subtitle {
+      font-size: 13.5px;
+      color: var(--text-muted);
+      margin-top: 6px;
+      line-height: 1.4;
+      font-weight: 400;
+    }
+
+    /* =========================================================
+       5. CARD BODY
+       ========================================================= */
+    .card-body {
+      padding: clamp(18px, 4vw, 24px);
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+
+    .field-group {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .field-label {
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      letter-spacing: 0.2px;
+    }
+
+    .field-label svg {
+      opacity: 0.8;
+    }
+
+    /* HWID BOX */
+    .hwid-container {
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 12px;
+      padding: 8px 10px 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .hwid-container:hover {
+      border-color: #323d4f;
+    }
+
+    .hwid-text {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: 0.5px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      user-select: all;
+    }
+
+    .btn-copy {
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 6px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .btn-copy:hover {
+      background: rgba(124, 92, 255, 0.15);
+      border-color: rgba(124, 92, 255, 0.35);
+      color: #fff;
+    }
+
+    .btn-copy.copied {
+      background: var(--success-soft);
+      border-color: var(--success-green);
+      color: var(--success-text);
+    }
+
+    /* LICENSE KEY INPUT */
+    .input-wrapper {
+      position: relative;
+    }
+
+    .key-input {
+      width: 100%;
+      background: var(--input-bg);
+      border: 1px solid var(--input-border);
+      border-radius: 12px;
+      padding: 12px 14px;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      font-size: 14.5px;
+      font-weight: 700;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      outline: none;
+      transition: all 0.25s ease;
+    }
+
+    .key-input::placeholder {
+      color: var(--text-faint);
+      font-weight: 500;
+      letter-spacing: 1px;
+    }
+
+    .key-input:hover {
+      border-color: #323d4f;
+    }
+
+    .key-input:focus {
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 0 3px var(--accent-soft), 0 0 20px rgba(124, 92, 255, 0.2);
+      background: #0e1218;
+    }
+
+    .key-input.input-error {
+      border-color: var(--error-red);
+      box-shadow: 0 0 0 3px var(--error-soft);
+    }
+
+    /* ERROR MESSAGE BOX */
+    .error-box {
+      background: var(--error-soft);
+      border: 1px solid var(--error-border);
+      color: var(--error-text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: shake 0.35s ease-in-out forwards;
+    }
+
+    .error-box.hidden {
+      display: none;
+    }
+
+    @keyframes shake {
+      0%, 100% { transform: translateX(0); }
+      20%, 60% { transform: translateX(-4px); }
+      40%, 80% { transform: translateX(4px); }
+    }
+
+    /* SUCCESS MESSAGE BOX */
+    .success-box {
+      background: var(--success-soft);
+      border: 1px solid var(--success-green);
+      color: var(--success-text);
+      padding: 10px 14px;
+      border-radius: 10px;
+      font-size: 13px;
+      line-height: 1.4;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      animation: cardAppear 0.3s ease forwards;
+    }
+
+    .success-box.hidden {
+      display: none;
+    }
+
+    /* PRIVACY DISCLAIMER BOX */
+    .disclaimer-card {
+      background: var(--accent-disclaimer-bg);
+      border: 1px solid var(--accent-disclaimer-border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .disclaimer-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--accent-purple);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .disclaimer-list {
+      list-style: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .disclaimer-list li {
+      font-size: 12.5px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+    }
+
+    .disclaimer-list li::before {
+      content: "•";
+      color: var(--accent-purple);
+      font-size: 14px;
+      line-height: 1.2;
+    }
+
+    /* =========================================================
+       6. FOOTER ACTION BUTTONS
+       ========================================================= */
+    .card-footer {
+      padding: 16px clamp(20px, 4vw, 28px) clamp(20px, 4vw, 28px);
+      background: rgba(10, 12, 16, 0.4);
+      border-top: 1px solid rgba(255, 255, 255, 0.03);
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .btn {
+      height: 44px;
+      border-radius: 12px;
+      font-family: var(--font-sans);
+      font-size: 14px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+      border: none;
+      outline: none;
+      white-space: nowrap;
+    }
+
+    /* DANGER / CLOSE BUTTON */
+    .btn-close {
+      background: rgba(239, 68, 68, 0.08);
+      border: 1px solid rgba(239, 68, 68, 0.22);
+      color: #f87171;
+      padding: 0 16px;
+      font-weight: 600;
+      flex-shrink: 0;
+    }
+
+    .btn-close:hover {
+      background: rgba(239, 68, 68, 0.16);
+      border-color: rgba(239, 68, 68, 0.4);
+      color: #ef4444;
+      transform: translateY(-1px);
+    }
+
+    .btn-close:active {
+      transform: translateY(0);
+    }
+
+    /* PRIMARY PURPLE SUBMIT BUTTON */
+    .btn-submit {
+      flex: 1;
+      background: var(--accent-purple);
+      color: #ffffff;
+      font-weight: 700;
+      box-shadow: 0 4px 20px var(--accent-glow);
+      position: relative;
+      overflow: hidden;
+    }
+
+    .btn-submit:hover:not(:disabled) {
+      background: var(--accent-purple-hover);
+      box-shadow: 0 6px 26px rgba(124, 92, 255, 0.5);
+      transform: translateY(-1px);
+    }
+
+    .btn-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-submit:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+      filter: grayscale(0.2);
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-top-color: #ffffff;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* =========================================================
+       7. MOBILE ADAPTATIONS
+       ========================================================= */
+    @media (max-width: 440px) {
+      .card-footer {
+        flex-direction: column-reverse;
+      }
+      .btn-close {
+        width: 100%;
+      }
+      .btn-submit {
+        width: 100%;
+      }
+      .key-input {
+        font-size: 13.5px;
+        letter-spacing: 1px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MAIN ACTIVATION CARD -->
+  <main class="license-card" role="region" aria-label="License Key Activation">
+    
+    <!-- 1. Header -->
+    <header class="card-header">
+      <div class="logo-badge" aria-hidden="true">
+        <!-- Modern Shield / Key Gradient SVG -->
+        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          <path d="M12 8v4"/>
+          <path d="M12 16h.01"/>
+        </svg>
+      </div>
+      <h1 class="app-title">DISCORD QUEST AUTO</h1>
+      <p class="app-subtitle">กรุณาเปิดใช้งาน License Key เพื่อเข้าสู่ระบบ</p>
+    </header>
+
+    <!-- 2. Form Body -->
+    <section class="card-body">
+
+      <!-- HWID Field -->
+      <div class="field-group">
+        <label class="field-label" for="hwidDisplay">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+          รหัสประจำเครื่องของคุณ (Hardware ID - HWID)
+        </label>
+        <div class="hwid-container">
+          <span id="hwidDisplay" class="hwid-text">HWID-8F92-4AE1-C307-E92A</span>
+          <button type="button" id="btnCopyHWID" class="btn-copy" title="คลิกเพื่อคัดลอกรหัส HWID">
+            <svg id="copyIcon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>
+            </svg>
+            <span id="copyText">📋 คัดลอก</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- License Key Input Field -->
+      <div class="field-group">
+        <label class="field-label" for="licenseKeyInput">
+          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5M7 10l-4 4 3 3 4-4"/>
+            <circle cx="15.5" cy="8.5" r="4.5"/>
+          </svg>
+          กรอก License Key ของคุณ
+        </label>
+        <div class="input-wrapper">
+          <input 
+            type="text" 
+            id="licenseKeyInput" 
+            class="key-input" 
+            placeholder="เช่น J3A-XXXX-XXXX-XXXX" 
+            maxlength="29"
+            autocomplete="off"
+            spellcheck="false"
+          >
+        </div>
+      </div>
+
+      <!-- Error Message Box -->
+      <div id="errorBox" class="error-box hidden" role="alert">
+        <span aria-hidden="true" style="font-size: 16px;">⚠️</span>
+        <span id="errorMessage">กรุณากรอก License Key ให้ถูกต้อง</span>
+      </div>
+
+      <!-- Success Message Box -->
+      <div id="successBox" class="success-box hidden" role="status">
+        <span aria-hidden="true" style="font-size: 16px;">✅</span>
+        <span id="successMessage">เปิดใช้งานสำเร็จ! กำลังเข้าสู่ระบบ...</span>
+      </div>
+
+      <!-- Privacy & Policy Disclaimer -->
+      <aside class="disclaimer-card" aria-label="License Agreement">
+        <div class="disclaimer-title">
+          <span>🔒</span>
+          <span>ข้อตกลงและนโยบายสิทธิ์ (License Agreement)</span>
+        </div>
+        <ul class="disclaimer-list">
+          <li>1 License Key ใช้ได้กับคอมพิวเตอร์ 1 เครื่องเท่านั้น (ผูกสิทธิ์ผ่านรหัสอุปกรณ์อัตโนมัติ)</li>
+          <li>ไม่มีการเข้าถึงหรือจัดเก็บข้อมูลส่วนตัวใดๆ ในคอมพิวเตอร์ทั้งสิ้น</li>
+        </ul>
+      </aside>
+
+    </section>
+
+    <!-- 3. Footer Action Buttons -->
+    <footer class="card-footer">
+      <button type="button" id="btnCloseApp" class="btn btn-close" title="ปิดหน้าต่างโปรแกรม">
+        <span>✕</span>
+        <span>ปิดโปรแกรม</span>
+      </button>
+      <button type="button" id="btnActivate" class="btn btn-submit">
+        <span id="submitIcon">🚀</span>
+        <span id="submitText">ยืนยันและเปิดใช้งาน</span>
+      </button>
+    </footer>
+
+  </main>
+
+  <!-- =========================================================
+       8. JAVASCRIPT LOGIC (MOCK ENGINE & EXTENSION HOOKS)
+       ========================================================= -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const hwidDisplay = document.getElementById('hwidDisplay');
+      const btnCopyHWID = document.getElementById('btnCopyHWID');
+      const copyText = document.getElementById('copyText');
+      const licenseKeyInput = document.getElementById('licenseKeyInput');
+      const btnActivate = document.getElementById('btnActivate');
+      const btnCloseApp = document.getElementById('btnCloseApp');
+      const errorBox = document.getElementById('errorBox');
+      const errorMessage = document.getElementById('errorMessage');
+      const successBox = document.getElementById('successBox');
+      const successMessage = document.getElementById('successMessage');
+      const submitText = document.getElementById('submitText');
+      const submitIcon = document.getElementById('submitIcon');
+
+      // -------------------------------------------------------------
+      // 1. Generate or Retrieve Deterministic Client HWID
+      // -------------------------------------------------------------
+      function getOrCreateHWID() {
+        let stored = localStorage.getItem('app_hwid');
+        if (!stored) {
+          // Generate a sleek Hardware ID signature format
+          const segments = Array.from({ length: 4 }, () => 
+            Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1).toUpperCase()
+          );
+          stored = 'HWID-' + segments.join('-');
+          localStorage.setItem('app_hwid', stored);
+        }
+        return stored;
+      }
+
+      const clientHWID = getOrCreateHWID();
+      hwidDisplay.textContent = clientHWID;
+
+      // -------------------------------------------------------------
+      // 2. Copy HWID to Clipboard (With 2s Feedback Animation)
+      // -------------------------------------------------------------
+      btnCopyHWID.addEventListener('click', async () => {
+        try {
+          await navigator.clipboard.writeText(clientHWID);
+        } catch {
+          // Fallback if navigator.clipboard is unavailable
+          const tempInput = document.createElement('input');
+          tempInput.value = clientHWID;
+          document.body.appendChild(tempInput);
+          tempInput.select();
+          document.execCommand('copy');
+          document.body.removeChild(tempInput);
+        }
+
+        btnCopyHWID.classList.add('copied');
+        copyText.textContent = '✓ คัดลอกแล้ว';
+
+        setTimeout(() => {
+          btnCopyHWID.classList.remove('copied');
+          copyText.textContent = '📋 คัดลอก';
+        }, 2000);
+      });
+
+      // -------------------------------------------------------------
+      // 3. License Key Auto-Formatter (Auto-Dash & Uppercase)
+      // -------------------------------------------------------------
+      licenseKeyInput.addEventListener('input', (e) => {
+        hideError();
+        hideSuccess();
+        
+        let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        // Auto format in chunks of 4 if desired (e.g. XXXX-XXXX-XXXX-XXXX)
+        // Or keep standard formatted input
+        const parts = [];
+        for (let i = 0; i < value.length; i += 4) {
+          parts.push(value.substring(i, i + 4));
+        }
+        if (parts.length > 0) {
+          e.target.value = parts.join('-').substring(0, 29);
+        } else {
+          e.target.value = '';
+        }
+      });
+
+      licenseKeyInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          btnActivate.click();
+        }
+      });
+
+      // -------------------------------------------------------------
+      // 4. Mock Verification API (Easily replaced with real backend)
+      // -------------------------------------------------------------
+      // Sample accepted test keys for demonstration:
+      const MOCK_VALID_KEYS = [
+        'J3A-PRO-2026-ACTIVE',
+        'COOK-45CL-ACKP-ASS1',
+        'VIP8-8888-9999-0000',
+        'DISC-ORDQ-UEST-AUTO'
+      ];
+
+      async function verifyLicenseWithServer(key, hwid) {
+        // SIMULATED NETWORK DELAY (800ms - 1.2s)
+        await new Promise(r => setTimeout(r, 1000));
+
+        /* =========================================================
+           🔌 REAL BACKEND API INTEGRATION POINT:
+           Uncomment and point this to your API server when ready:
+           ---------------------------------------------------------
+           const response = await fetch('https://your-api.com/api/v1/license/verify', {
+             method: 'POST',
+             headers: { 'Content-Type': 'application/json' },
+             body: JSON.stringify({ key, hwid })
+           });
+           return await response.json();
+           ========================================================= */
+
+        // Mock verification rules:
+        const cleanKey = key.trim().toUpperCase();
+        if (MOCK_VALID_KEYS.includes(cleanKey) || cleanKey.startsWith('VIP-') || cleanKey.startsWith('J3A-')) {
+          return {
+            success: true,
+            message: 'License Key ถูกต้องและเปิดใช้งานสำเร็จ!',
+            expiresAt: '2027-12-31',
+            tier: 'Lifetime Access'
+          };
+        } else {
+          return {
+            success: false,
+            message: 'License Key ไม่ถูกต้อง หรือถูกระงับการใช้งานในระบบ'
+          };
+        }
+      }
+
+      // -------------------------------------------------------------
+      // 5. Activation Trigger & State Handling
+      // -------------------------------------------------------------
+      btnActivate.addEventListener('click', async () => {
+        const rawKey = licenseKeyInput.value.trim();
+
+        hideError();
+        hideSuccess();
+
+        // Validation: Empty check
+        if (!rawKey) {
+          showError('กรุณากรอก License Key ของคุณก่อนกดยืนยัน');
+          licenseKeyInput.focus();
+          return;
+        }
+
+        // Validation: Minimum length check
+        if (rawKey.length < 8) {
+          showError('รูปแบบ License Key ไม่ถูกต้อง (สั้นเกินไป)');
+          licenseKeyInput.focus();
+          return;
+        }
+
+        // Set Loading UI State
+        setLoading(true);
+
+        try {
+          const result = await verifyLicenseWithServer(rawKey, clientHWID);
+
+          if (result.success) {
+            showSuccess(result.message || 'เปิดใช้งานสำเร็จ! กำลังเข้าสู่ระบบ...');
+            // Save active license in client storage
+            localStorage.setItem('license_key', rawKey);
+            localStorage.setItem('license_verified', 'true');
+
+            // Simulate transition to main app
+            setTimeout(() => {
+              if (window.opener || window.parent !== window) {
+                window.parent.postMessage({ type: 'LICENSE_ACTIVATED', key: rawKey }, '*');
+              } else {
+                // Redirect or open main application dashboard
+                window.location.href = '/';
+              }
+            }, 1200);
+
+          } else {
+            showError(result.message || 'License Key ไม่ถูกต้อง หรือหมดอายุแล้ว');
+            licenseKeyInput.classList.add('input-error');
+          }
+        } catch (err) {
+          showError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง');
+        } finally {
+          setLoading(false);
+        }
+      });
+
+      // -------------------------------------------------------------
+      // 6. Close / Exit Button
+      // -------------------------------------------------------------
+      btnCloseApp.addEventListener('click', () => {
+        if (confirm('คุณต้องการปิดโปรแกรมใช่หรือไม่?')) {
+          try {
+            window.close();
+          } catch {}
+          // For Electron / desktop environment:
+          if (window.electronAPI && window.electronAPI.closeApp) {
+            window.electronAPI.closeApp();
+          } else {
+            document.body.innerHTML = '<div style="color:#8a93a5;text-align:center;padding:40px;font-family:sans-serif;">โปรแกรมถูกปิดเรียบร้อยแล้ว สามารถปิดหน้านี้ได้เลย</div>';
+          }
+        }
+      });
+
+      // -------------------------------------------------------------
+      // Helper Functions
+      // -------------------------------------------------------------
+      function showError(msg) {
+        errorMessage.textContent = msg;
+        errorBox.classList.remove('hidden');
+        licenseKeyInput.classList.add('input-error');
+      }
+
+      function hideError() {
+        errorBox.classList.add('hidden');
+        licenseKeyInput.classList.remove('input-error');
+      }
+
+      function showSuccess(msg) {
+        successMessage.textContent = msg;
+        successBox.classList.remove('hidden');
+      }
+
+      function hideSuccess() {
+        successBox.classList.add('hidden');
+      }
+
+      function setLoading(isLoading) {
+        if (isLoading) {
+          btnActivate.disabled = true;
+          licenseKeyInput.disabled = true;
+          submitIcon.innerHTML = '<div class="spinner"></div>';
+          submitText.textContent = 'กำลังตรวจสอบ…';
+        } else {
+          btnActivate.disabled = false;
+          licenseKeyInput.disabled = false;
+          submitIcon.innerHTML = '🚀';
+          submitText.textContent = 'ยืนยันและเปิดใช้งาน';
+        }
+      }
+
+    });
+  </script>
+</body>
+</html>
