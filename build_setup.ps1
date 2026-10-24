@@ -8,6 +8,9 @@ New-Item -ItemType Directory -Path $targetDir | Out-Null
 $filesToInclude = @(
     "server.js",
     "token_extractor.js",
+    "fake_game_spawner.js",
+    "dummy_stub.exe",
+    "dummy_game.cs",
     "version.json",
     "launch.vbs",
     "start.bat",

@@ -462,7 +462,9 @@ function setupEventListeners() {
         });
         appendLog({
           time: new Date().toLocaleTimeString('th-TH'),
-          message: chkSkipGameQuests.checked ? '⚡ เปิดใช้งาน: ข้ามเควสต์เล่นเกม (ทำเฉพาะเควสต์ดูเวลา/คลิป)' : '🎮 ปิดใช้งาน: อนุญาตให้ระบบทำเควสต์เล่นเกม',
+          message: chkSkipGameQuests.checked 
+            ? '⚡ เปิดใช้งาน: ข้ามเควสต์เล่นเกม (ทำเฉพาะเควสต์ดูเวลา/คลิป)' 
+            : '🎮 เปิดใช้งาน: โหมด Auto Fake Game (จำลองเล่นเกม 0% CPU เพื่อทำเควสต์เล่นเกมอัตโนมัติ)',
           type: 'info'
         });
       } catch (e) {}
@@ -813,7 +815,7 @@ function renderQuests() {
       typeLabel = '📡 สตรีม';
     } else if (q.taskType.includes('PLAY')) {
       typeBadgeClass = 'badge-desktop';
-      typeLabel = '🎮 เล่นเกม (ข้าม)';
+      typeLabel = (chkSkipGameQuests && !chkSkipGameQuests.checked) ? '🎮 เล่นเกม (Fake Game)' : '🎮 เล่นเกม';
     }
 
     // Status Badge

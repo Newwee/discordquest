@@ -11,7 +11,7 @@ git status
 
 echo.
 set /p msg="ใส่ข้อความบันทึกการอัปเดต (Commit Message) [กด Enter ใช้ค่าเริ่มต้น]: "
-if "%msg%"=="" set msg=Update Discord Quest Auto v2.2.0 - Complete Video Quests support
+if "%msg%"=="" set msg=Update Discord Quest Auto v2.3.0 - Auto Fake Game Spawner
 
 echo.
 echo กำลัง Add ไฟล์และ Commit...

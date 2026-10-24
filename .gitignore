@@ -4,6 +4,7 @@ config.json
 # Temporary build archives & logs
 *.log
 payload.zip
+detectable_cache.json
 .system_generated/
 node_modules/
 

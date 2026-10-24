@@ -3,6 +3,13 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { exec } = require('node:child_process');
 const { findLocalDiscordToken } = require('./token_extractor');
+const {
+  ensureDummyStub,
+  isDiscordDesktopRunning,
+  findExecutableForQuest,
+  spawnFakeGame,
+  killFakeGame
+} = require('./fake_game_spawner');
 
 const PORT = 4545;
 const CONFIG_FILE = path.join(__dirname, 'config.json');
@@ -129,6 +136,8 @@ const runnerState = {
     percent: 0
   }
 };
+
+let activeFakeGame = null;
 
 // Rate Limit & Cache Shield for Quests (Per-Token Map)
 const questsCacheMap = new Map();
@@ -447,6 +456,8 @@ function parseQuestInfo(quest) {
     id: quest.id,
     name: questName,
     gameTitle,
+    applicationId: config.application?.id || null,
+    rawConfig: config,
     expiresAt,
     isExpired,
     taskType,
@@ -571,9 +582,11 @@ async function runAutoQuests(token) {
         runnerState.isRunning = false;
         return;
       }
+    } else {
+      log(`⚡ การตั้งค่า: ทำทุกเควสต์รวมถึงเควสต์เล่นเกม (${pendingQuests.length} เควสต์: ดูคลิป ${watchQuests.length} + เล่นเกม ${gameQuests.length}) ด้วย Fake Game Spawner 🎮`, 'info');
     }
 
-    // Sort: Video quests first
+    // Sort: Video quests first, then game quests
     questsToRun.sort((a, b) => {
       const aIsVid = a.taskType.includes('VIDEO') ? 1 : 0;
       const bIsVid = b.taskType.includes('VIDEO') ? 1 : 0;
@@ -654,11 +667,85 @@ async function runAutoQuests(token) {
             }
           }
         }
+      } else if (q.taskType === 'PLAY_ON_DESKTOP') {
+        // 🎮 Auto Fake Game Execution
+        const hasDiscordDesktop = isDiscordDesktopRunning();
+        if (!hasDiscordDesktop) {
+          log(`⚠️ ตรวจไม่พบโปรแกรม Discord Desktop กำลังรันอยู่ในเครื่อง!`, 'warn');
+          log(`💡 กรุณาเปิดโปรแกรม Discord Desktop ทิ้งไว้ เพื่อให้ Discord เริ่มตรวจจับและนับเวลาเล่นเกม`, 'warn');
+        }
+
+        const exeName = await findExecutableForQuest(q);
+        log(`🎮 กำลังเตรียมเปิด Process จำลองเกม: "${q.name}" (Executable: ${exeName})...`, 'info');
+
+        try {
+          activeFakeGame = spawnFakeGame(exeName);
+          log(`🚀 รันเกมจำลอง [${exeName}] (PID: ${activeFakeGame.pid}) สำเร็จ! (กิน CPU/RAM 0%)`, 'success');
+          log(`⏳ Discord Desktop กำลังตรวจจับสถานะ "Playing ${q.name}" และเริ่มนับเวลา (เป้าหมาย: ${q.targetSeconds}s / ${Math.ceil(q.targetSeconds / 60)} นาที)...`, 'info');
+
+          let secDone = q.currentSeconds;
+          const target = q.targetSeconds || 900;
+          let pollCounter = 0;
+
+          while (secDone < target) {
+            if (runnerState.shouldStop) {
+              log('⏹️ ผู้ใช้สั่งหยุดการทำงาน', 'warn');
+              break;
+            }
+
+            // Wait 10 seconds per step
+            await new Promise(r => setTimeout(r, 10000));
+            secDone = Math.min(target, secDone + 10);
+            pollCounter += 10;
+
+            runnerState.progress.currentSeconds = secDone;
+            runnerState.progress.percent = Math.floor((secDone / target) * 100);
+
+            // Log progress every 30 seconds
+            if (pollCounter % 30 === 0 || secDone >= target) {
+              log(`🎮 กำลังเล่นเกม [${q.name}]: ${secDone}/${target}s (${Math.floor(secDone / 60)}/${Math.ceil(target / 60)} นาที - ${runnerState.progress.percent}%)`, 'info');
+            }
+
+            // Every 50 seconds, poll Discord API to get the true synced progress
+            if (pollCounter >= 50) {
+              pollCounter = 0;
+              try {
+                const refreshed = await getOrFetchQuests(token, true);
+                const updatedQ = (refreshed.quests || []).find(x => x.id === q.id);
+                if (updatedQ) {
+                  if (updatedQ.currentSeconds > secDone) {
+                    secDone = updatedQ.currentSeconds;
+                    runnerState.progress.currentSeconds = secDone;
+                    runnerState.progress.percent = Math.floor((secDone / target) * 100);
+                  }
+                  if (updatedQ.isCompleted) {
+                    secDone = target;
+                    break;
+                  }
+                }
+              } catch (e) {}
+            }
+
+            if (secDone >= target) break;
+          }
+
+          if (secDone >= target) {
+            log(`✨ เควสต์เล่นเกม "${q.name}" ทำสำเร็จแล้ว 100%! (รอไปกดรับรางวัลใน Discord)`, 'success');
+            q.isCompleted = true;
+            q.statusText = 'READY_TO_CLAIM';
+          }
+        } catch (fakeErr) {
+          log(`❌ เกิดข้อผิดพลาดในการจำลองเกม: ${fakeErr.message}`, 'error');
+        } finally {
+          if (activeFakeGame) {
+            killFakeGame(activeFakeGame);
+            log(`🛑 ปิด Process จำลอง [${exeName}] เรียบร้อยแล้ว`, 'info');
+            activeFakeGame = null;
+          }
+        }
       } else {
-        // Desktop / Game / Stream Quest
-        log(`ℹ️ เควสต์ "${q.name}" เป็นประเภท [${q.taskType}]`, 'info');
-        log(`💡 สำหรับเควสต์เกม/สตรีม Discord จำเป็นต้องใช้การตรวจจับจากโปรแกรม Discord Desktop หรือเปิด Stream ในห้องเสียง`, 'warn');
-        log(`⏩ กำลังข้ามไปเควสต์ถัดไป... (คุณสามารถเปิดสตรีมในดิสแล้วรอให้เวลาเควสขึ้นได้)`, 'info');
+        // Stream / Activity / Console
+        log(`ℹ️ เควสต์ "${q.name}" เป็นประเภท [${q.taskType}] (ข้าม)`, 'info');
       }
 
       runnerState.progress.done++;
@@ -669,6 +756,10 @@ async function runAutoQuests(token) {
   } catch (err) {
     log(`❌ เกิดข้อผิดพลาดในการรันเควสต์: ${err.message}`, 'error');
   } finally {
+    if (activeFakeGame) {
+      killFakeGame(activeFakeGame);
+      activeFakeGame = null;
+    }
     runnerState.isRunning = false;
     runnerState.currentQuest = null;
     runnerState.progress.currentName = '';
@@ -995,6 +1086,10 @@ const server = http.createServer(async (req, res) => {
   // 7. Stop Auto Runner
   if (pathname === '/api/stop' && req.method === 'POST') {
     runnerState.shouldStop = true;
+    if (activeFakeGame) {
+      killFakeGame(activeFakeGame);
+      activeFakeGame = null;
+    }
     log('⏹️ ได้รับคำสั่งหยุดการทำงานจากผู้ใช้...', 'warn');
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ success: true, message: 'สั่งหยุดการทำงานแล้ว' }));

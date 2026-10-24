@@ -1,13 +1,13 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "name": "Discord Quest Auto",
-  "releaseDate": "2026-10-21",
+  "releaseDate": "2026-10-24",
   "githubRepo": "https://github.com/Newwee/discordquest",
   "releaseNotes": [
-    "🎬 รองรับเควสต์ดูคลิปวิดีโอ (Watch Video / Orbs Quests) ครบสมบูรณ์ 100% (เช่น Firefox, Royal Match, Magic: The Gathering, Enshrouded, Topaz)",
-    "🔓 ปลดล็อกเควสต์วิดีโอทั้งหมด (36+ เควสต์) ด้วย Discord Web Client Build Simulation",
-    "⚡ ระบบส่ง Video Progress แบบ Incremental Heartbeat ตรงตามมาตรฐาน Discord API ไม่โดนแบนหรือ Error 400/403",
-    "🎮 ตัวเลือก 'ข้ามเควสต์เล่นเกม' ทำเฉพาะเควสต์ดูคลิป/เวลา และกดรับ (Enroll) เควสต์เล่นเกมไว้ให้อัตโนมัติ",
-    "📊 แก้ไขการจัดหมวดหมู่แท็บเควสต์ให้แยกชัดเจนระหว่างเควสต์ดูคลิปกับเควสต์เล่นเกม"
+    "🎮 ระบบ Auto Fake Game Spawner: รองรับเควสต์เล่นเกมบนคอม (PLAY_ON_DESKTOP) 100% โดยไม่ต้องโหลดเกมจริง",
+    "⚡ ตรวจจับและจับคู่ชื่อไฟล์ .exe ของเกมจากฐานข้อมูล Discord Detectable Database อัตโนมัติ",
+    "🛡️ Process จำลองขนาดจิ๋ว (4 KB) ซ่อนหน้าต่าง ปลอดภัย กิน CPU/RAM 0% ไม่รบกวนการใช้งานเครื่อง",
+    "🛑 ระบบ Auto-Kill และล้างไฟล์ Temp อัตโนมัติเมื่อทำเควสต์เสร็จ หรือเมื่อกดยกเลิก/ปิดโปรแกรม",
+    "🎬 รันเควสต์ดูวิดีโอ (Watch Video) และเควสต์เล่นเกมต่อเนื่องในลูปเดียวได้อย่างสมบูรณ์แบบ"
   ]
 }
