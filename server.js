@@ -219,6 +219,42 @@ function getDiscordHeaders(token) {
   };
 }
 
+const DISCORD_CLIENT_UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) discord/1.0.9265 Chrome/138.0.7204.251 Electron/37.6.0 Safari/537.36';
+
+function getDiscordClientSuperPropsBase64() {
+  const superProps = {
+    os: 'Windows',
+    browser: 'Discord Client',
+    release_channel: 'stable',
+    client_version: '1.0.9265',
+    os_version: '10.0.19045',
+    os_arch: 'x64',
+    app_arch: 'x64',
+    system_locale: 'en-US',
+    has_client_mods: false,
+    client_launch_id: 'e3b0c442-98fc-1c14-9af0-2a3b9a1e0b61',
+    browser_user_agent: DISCORD_CLIENT_UA,
+    browser_version: '37.6.0',
+    os_sdk_version: '19045',
+    client_build_number: 471091,
+    native_build_number: 72186,
+    client_event_source: null
+  };
+  return Buffer.from(JSON.stringify(superProps)).toString('base64');
+}
+
+function getDiscordClientHeaders(token) {
+  return {
+    "Authorization": token.trim(),
+    "Content-Type": "application/json",
+    "User-Agent": DISCORD_CLIENT_UA,
+    "X-Super-Properties": getDiscordClientSuperPropsBase64(),
+    "X-Discord-Locale": "en-US",
+    "Origin": "https://discord.com",
+    "Referer": "https://discord.com/channels/@me"
+  };
+}
+
 // --- Discord API Helper Functions ---
 async function fetchDiscordUser(token) {
   if (!token) throw new Error('Token is missing');
@@ -514,6 +550,31 @@ async function sendVideoProgress(token, questId, timestamp) {
   return await res.json();
 }
 
+// Send Desktop Game Heartbeat directly to Discord Server
+async function sendGameHeartbeat(token, questId, applicationId, terminal = false) {
+  const res = await fetch(`https://discord.com/api/v9/quests/${questId}/heartbeat`, {
+    method: 'POST',
+    headers: getDiscordClientHeaders(token),
+    body: JSON.stringify({
+      application_id: applicationId,
+      terminal: !!terminal
+    })
+  });
+  if (!res.ok) {
+    const errText = await res.text();
+    let retryAfter = null;
+    try {
+      const parsed = JSON.parse(errText);
+      retryAfter = parsed.retry_after;
+    } catch {}
+    const err = new Error(`Heartbeat failed (${res.status}): ${errText}`);
+    err.status = res.status;
+    err.retryAfter = retryAfter;
+    throw err;
+  }
+  return await res.json();
+}
+
 // Main Automation Runner Loop
 async function runAutoQuests(token) {
   if (runnerState.isRunning) {
@@ -668,86 +729,69 @@ async function runAutoQuests(token) {
           }
         }
       } else if (q.taskType === 'PLAY_ON_DESKTOP') {
-        // 🎮 Auto Fake Game Execution
-        const hasDiscordDesktop = isDiscordDesktopRunning();
-        if (!hasDiscordDesktop) {
-          log(`⚠️ ตรวจไม่พบโปรแกรม Discord Desktop กำลังรันอยู่ในเครื่อง!`, 'warn');
-          log(`💡 กรุณาเปิดโปรแกรม Discord Desktop ทิ้งไว้ เพื่อให้ Discord เริ่มตรวจจับและนับเวลาเล่นเกม`, 'warn');
-        }
+        const appId = q.applicationId || q.rawConfig?.task_config_v2?.tasks?.PLAY_ON_DESKTOP?.applications?.[0]?.id || q.rawConfig?.application?.id;
+        const target = q.targetSeconds || 900;
+        let secDone = q.currentSeconds || 0;
 
-        const exeName = await findExecutableForQuest(q);
-        log(`🎮 กำลังเตรียมเปิด Process จำลองเกม: "${q.name}" (Executable: ${exeName})...`, 'info');
+        log(`🎮 รันเควสต์เล่นเกม: "${q.name}" (App ID: ${appId}) | เป้าหมาย: ${target}s (${Math.ceil(target / 60)} นาที)...`, 'info');
+
+        // Optional background process simulation
+        let exeName = 'game.exe';
+        try {
+          exeName = await findExecutableForQuest(q);
+          activeFakeGame = spawnFakeGame(exeName, q.gameTitle || q.name);
+          log(`🚀 จำลองโปรเซส [${exeName}] (PID: ${activeFakeGame.pid}) เรียบร้อย (กิน CPU/RAM 0%)`, 'info');
+        } catch (e) {}
+
+        log(`⚡ เริ่มระบบ Direct Heartbeat Engine ยิงตรงสู่เซิร์ฟเวอร์ Discord ทุก 20 วินาที...`, 'info');
 
         try {
-          activeFakeGame = spawnFakeGame(exeName, q.gameTitle || q.name);
-          log(`🚀 รันเกมจำลอง [${exeName}] (PID: ${activeFakeGame.pid}) สำเร็จ! (กิน CPU/RAM 0%)`, 'success');
-          log(`⏳ Discord Desktop กำลังตรวจจับสถานะ "Playing ${q.name}" และเริ่มนับเวลา (เป้าหมาย: ${q.targetSeconds}s / ${Math.ceil(q.targetSeconds / 60)} นาที)...`, 'info');
-
-          let secDone = q.currentSeconds;
-          const target = q.targetSeconds || 900;
-          let pollCounter = 0;
-          let zeroWarnCount = 0;
-
           while (secDone < target) {
             if (runnerState.shouldStop) {
               log('⏹️ ผู้ใช้สั่งหยุดการทำงาน', 'warn');
               break;
             }
 
-            // Wait 10 seconds per step
-            await new Promise(r => setTimeout(r, 10000));
-            secDone = Math.min(target, secDone + 10);
-            pollCounter += 10;
+            try {
+              const hbRes = await sendGameHeartbeat(token, q.id, appId, false);
+              const serverProgress = hbRes?.progress?.PLAY_ON_DESKTOP?.value;
 
-            runnerState.progress.currentSeconds = secDone;
-            runnerState.progress.percent = Math.floor((secDone / target) * 100);
+              if (typeof serverProgress === 'number') {
+                secDone = serverProgress;
+              } else {
+                secDone = Math.min(target, secDone + 20);
+              }
 
-            // Log progress every 30 seconds
-            if (pollCounter % 30 === 0 || secDone >= target) {
-              log(`🎮 กำลังเล่นเกม [${q.name}]: ${secDone}/${target}s (${Math.floor(secDone / 60)}/${Math.ceil(target / 60)} นาที - ${runnerState.progress.percent}%)`, 'info');
+              runnerState.progress.currentSeconds = secDone;
+              runnerState.progress.percent = Math.floor((secDone / target) * 100);
+
+              log(`🎮 ความคืบหน้าเควสต์ [${q.name}]: ${secDone}/${target}s (${Math.floor(secDone / 60)}/${Math.ceil(target / 60)} นาที - ${runnerState.progress.percent}%)`, 'info');
+
+              if (hbRes.completed_at || secDone >= target) {
+                // Send final terminal heartbeat to finalize completion
+                try {
+                  await sendGameHeartbeat(token, q.id, appId, true);
+                } catch {}
+                log(`✨ เควสต์เล่นเกม "${q.name}" ทำสำเร็จแล้ว 100%! (ปุ่มใน Discord จะเปลี่ยนเป็น Claim Reward ทันที)`, 'success');
+                q.isCompleted = true;
+                q.statusText = 'READY_TO_CLAIM';
+                break;
+              }
+            } catch (hbErr) {
+              if (hbErr.retryAfter) {
+                const waitSec = Math.ceil(hbErr.retryAfter);
+                log(`⏳ ติด Rate Limit รอก่อน ${waitSec} วินาที...`, 'warn');
+                await new Promise(r => setTimeout(r, (waitSec * 1000) + 1000));
+              } else {
+                log(`⚠️ Heartbeat notice: ${hbErr.message}`, 'warn');
+              }
             }
 
-            // Every 30 seconds, poll Discord API to get the true synced progress
-            if (pollCounter >= 30) {
-              pollCounter = 0;
-              try {
-                const refreshed = await getOrFetchQuests(token, true);
-                const updatedQ = (refreshed.quests || []).find(x => x.id === q.id);
-                if (updatedQ) {
-                  if (updatedQ.currentSeconds > 0) {
-                    secDone = Math.max(secDone, updatedQ.currentSeconds);
-                    runnerState.progress.currentSeconds = secDone;
-                    runnerState.progress.percent = Math.floor((secDone / target) * 100);
-                  } else if (secDone >= 30) {
-                    zeroWarnCount++;
-                    if (zeroWarnCount % 2 === 1) {
-                      log(`⚠️ Discord ยังไม่เริ่มนับเวลาให้เควสต์ "${q.name}" (0s/${target}s)!`, 'warn');
-                      log(`👉 หากใน Discord แสดงปุ่ม "Select a platform to get started" กรุณากดเลือก "PC" ใน Discord ทันที`, 'warn');
-                      log(`👉 และตรวจสอบว่าเปิดแอป Discord Desktop (ในคอม) ทิ้งไว้`, 'warn');
-                    }
-                    // Keep secDone aligned so we don't falsely claim 100%
-                    secDone = 0;
-                    runnerState.progress.currentSeconds = 0;
-                    runnerState.progress.percent = 0;
-                  }
-                  if (updatedQ.isCompleted) {
-                    secDone = target;
-                    break;
-                  }
-                }
-              } catch (e) {}
-            }
-
-            if (secDone >= target) break;
-          }
-
-          if (secDone >= target) {
-            log(`✨ เควสต์เล่นเกม "${q.name}" ทำสำเร็จแล้ว 100%! (รอไปกดรับรางวัลใน Discord)`, 'success');
-            q.isCompleted = true;
-            q.statusText = 'READY_TO_CLAIM';
+            // Discord expects heartbeats every 20 seconds
+            await new Promise(r => setTimeout(r, 20000));
           }
         } catch (fakeErr) {
-          log(`❌ เกิดข้อผิดพลาดในการจำลองเกม: ${fakeErr.message}`, 'error');
+          log(`❌ เกิดข้อผิดพลาดในการทำเควสต์: ${fakeErr.message}`, 'error');
         } finally {
           if (activeFakeGame) {
             killFakeGame(activeFakeGame);

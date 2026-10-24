@@ -1,12 +1,12 @@
 {
-  "version": "2.3.1",
+  "version": "2.4.0",
   "name": "Discord Quest Auto",
   "releaseDate": "2026-10-24",
   "githubRepo": "https://github.com/Newwee/discordquest",
   "releaseNotes": [
-    "⚡ ระบบ Real-time Server Sync: ดึงสถานะเควสต์จริงจาก Discord API ทุก 30 วินาที ป้องกันแถบเวลานับหลอก",
-    "🔔 ระบบตรวจจับเควสต์ Multi-Platform: แจ้งเตือนทันทีหากเควสต์ต้องการให้กด 'Select a platform' (เลือก PC) ใน Discord",
-    "🎮 ปรับปรุง Fake Game Process: รองรับ SW_SHOWMINNOACTIVE เพื่อให้ Discord Desktop hook และจับเวลาได้อย่างสมบูรณ์แบบ",
-    "🛡️ ป้องกันข้อผิดพลาด Local Time Mismatch เมื่อ Discord Desktop ยังไม่เริ่มนับเวลา"
+    "🔥 Direct Heartbeat Engine: ยิง Heartbeat สำหรับเควสต์เล่นเกม (PLAY_ON_DESKTOP) ตรงเข้าเซิร์ฟเวอร์ Discord 100%",
+    "⚡ เวลาเควสต์เล่นเกมขยับจริงบนเซิร์ฟเวอร์ Discord ทุก 20 วินาที โดยไม่ต้องติดตั้งเกมจริง",
+    "🎯 เมื่อครบ 15 นาที (900s) ปุ่มใน Discord จะเปลี่ยนเป็น 'Claim Reward' ให้กดรับ Orbs ได้ทันที",
+    "🛡️ รันควบคู่กับ Process จำลองแบบ Minimized เพิ่มความแนบเนียนในการตรวจจับของ Discord"
   ]
 }
