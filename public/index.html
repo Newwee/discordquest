@@ -60,7 +60,7 @@
         </button>
 
         <!-- Check Update Button -->
-        <button id="btnCheckUpdate" class="btn btn-secondary btn-update-nav" title="ตรวจสอบเวอร์ชันใหม่จาก GitHub">
+        <button id="btnCheckUpdate" class="btn btn-secondary btn-update-nav" title="ตรวจสอบเวอร์ชันใหม่">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/></svg>
           <span>เช็คอัปเดต</span>
           <span id="updateBadge" class="update-nav-badge hidden">NEW</span>
@@ -390,8 +390,8 @@
           <div class="guide-step-card">
             <div class="guide-step-num">6</div>
             <div class="guide-step-content">
-              <h4>🚀 อัปเดตอัตโนมัติจาก GitHub</h4>
-              <p>เชื่อมต่อกับ GitHub เมื่อมีเวอร์ชันใหม่จะมีจุดแจ้งเตือนขึ้นที่ปุ่ม "เช็คอัปเดต" สามารถกดดู Changelog และดาวน์โหลดได้ทันที</p>
+              <h4>🚀 ระบบตรวจสอบอัปเดตอัตโนมัติ</h4>
+              <p>ระบบตรวจสอบการอัปเดตอัตโนมัติ เมื่อมีเวอร์ชันใหม่จะมีจุดแจ้งเตือนขึ้นที่ปุ่ม "เช็คอัปเดต" สามารถกดดูสิ่งที่เพิ่มเข้ามาและดาวน์โหลดได้ทันที</p>
             </div>
           </div>
         </div>
@@ -411,7 +411,7 @@
     </div>
   </div>
 
-  <!-- GITHUB UPDATE MODAL (ตรวจสอบอัปเดต) -->
+  <!-- UPDATE MODAL (ตรวจสอบอัปเดต) -->
   <div id="updateModal" class="modal-backdrop hidden">
     <div class="modal-card update-modal-card border-beam-card">
       <div class="modal-header">
@@ -422,25 +422,25 @@
         </div>
         <div>
           <h3 class="shiny-text">⚡ ตรวจสอบการอัปเดตโปรแกรม</h3>
-          <p class="modal-subheading">เชื่อมต่อกับ GitHub: <a href="https://github.com/Newwee/discordquest" target="_blank" class="text-cyan">Newwee/discordquest</a></p>
+          <p class="modal-subheading">ระบบตรวจสอบเวอร์ชันล่าสุดอัตโนมัติ</p>
         </div>
       </div>
       <div class="modal-body">
         <div class="update-version-row">
           <div class="version-badge-box">
             <span class="version-label">เวอร์ชันของคุณ</span>
-            <span id="currentVersionTag" class="version-val">v2.3.0</span>
+            <span id="currentVersionTag" class="version-val">v2.4.0</span>
           </div>
           <div class="version-arrow">➜</div>
           <div class="version-badge-box">
-            <span class="version-label">เวอร์ชันล่าสุดบน GitHub</span>
+            <span class="version-label">เวอร์ชันล่าสุด</span>
             <span id="latestVersionTag" class="version-val text-cyan">กำลังเช็ค...</span>
           </div>
         </div>
 
         <div id="updateStatusBanner" class="update-status-banner info">
           <span class="sync-dot"></span>
-          <span id="updateStatusText">กำลังเชื่อมต่อกับ GitHub...</span>
+          <span id="updateStatusText">กำลังตรวจสอบเวอร์ชันล่าสุด...</span>
         </div>
 
         <div class="changelog-container">
@@ -457,7 +457,7 @@
         </button>
         <button id="btnDownloadUpdate" class="btn btn-cyan btn-glow hidden">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-          ไปที่หน้าดาวน์โหลด / GitHub Release
+          ดาวน์โหลดเวอร์ชันใหม่
         </button>
         <button id="btnCloseUpdateModal" class="btn btn-secondary">ปิด</button>
       </div>

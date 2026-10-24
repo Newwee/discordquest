@@ -44,7 +44,7 @@ const latestVersionTag = document.getElementById('latestVersionTag');
 const updateStatusBanner = document.getElementById('updateStatusBanner');
 const updateStatusText = document.getElementById('updateStatusText');
 const changelogList = document.getElementById('changelogList');
-let latestReleaseUrl = 'https://github.com/Newwee/discordquest/releases';
+let latestReleaseUrl = '/api/download-latest';
 
 // Account Switcher Elements
 const accountModal = document.getElementById('accountModal');
@@ -510,7 +510,7 @@ async function checkForUpdates(openModalOnResult = false) {
   if (openModalOnResult) {
     updateModal.classList.remove('hidden');
     updateStatusBanner.className = 'update-status-banner info';
-    updateStatusText.textContent = 'กำลังติดต่อ GitHub Releases & Raw Data...';
+    updateStatusText.textContent = 'กำลังตรวจสอบเวอร์ชันล่าสุด...';
     btnCheckUpdateAgain.disabled = true;
   }
 
@@ -521,7 +521,7 @@ async function checkForUpdates(openModalOnResult = false) {
 
     currentVersionTag.textContent = `v${data.currentVersion}`;
     latestVersionTag.textContent = `v${data.latestVersion}`;
-    latestReleaseUrl = data.releaseUrl || 'https://github.com/Newwee/discordquest/releases';
+    latestReleaseUrl = data.downloadUrl || data.releaseUrl || '/api/download-latest';
 
     // Populate Changelog
     changelogList.innerHTML = '';

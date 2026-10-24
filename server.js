@@ -1082,9 +1082,16 @@ const server = http.createServer(async (req, res) => {
       hasUpdate,
       releaseName: releaseName || `v${latestVersion}`,
       releaseNotes,
-      releaseUrl,
+      downloadUrl: '/api/download-latest',
       publishedAt
     }));
+  }
+
+  // 4.6 Direct Download Latest Release (Without exposing raw GitHub link to UI)
+  if (pathname === '/api/download-latest' && req.method === 'GET') {
+    const directZipUrl = 'https://github.com/Newwee/discordquest/releases/latest/download/DiscordQuestAuto_Setup.zip';
+    res.writeHead(302, { 'Location': directZipUrl });
+    return res.end();
   }
 
   // 5. Fetch Quests & Calculations (Cached & Rate-Limit Shielded)

@@ -20,8 +20,34 @@ On Error GoTo 0
 If Not isServerRunning Then
     WshShell.CurrentDirectory = currentDir
     WshShell.Run "cmd /c node server.js", 0, False
-    WScript.Sleep 800
+    WScript.Sleep 1000
 End If
 
-' Open in User's Default Browser
-WshShell.Run "http://localhost:4545", 1, False
+' App Mode Window Launcher (Stand-alone window like a real desktop app)
+localAppData = WshShell.ExpandEnvironmentStrings("%LOCALAPPDATA%")
+appUrl = "http://localhost:4545"
+
+browserPaths = Array( _
+    "C:\Program Files\Google\Chrome\Application\chrome.exe", _
+    "C:\Program Files (x86)\Google\Chrome\Application\chrome.exe", _
+    localAppData & "\Google\Chrome\Application\chrome.exe", _
+    "C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe", _
+    "C:\Program Files\Microsoft\Edge\Application\msedge.exe", _
+    localAppData & "\Microsoft\Edge\Application\msedge.exe" _
+)
+
+foundBrowser = ""
+For Each bp In browserPaths
+    If fso.FileExists(bp) Then
+        foundBrowser = bp
+        Exit For
+    End If
+Next
+
+If foundBrowser <> "" Then
+    ' Launch in standalone desktop application window mode without URL bar or browser tabs
+    WshShell.Run """" & foundBrowser & """ --app=""" & appUrl & """", 1, False
+Else
+    ' Fallback to default browser
+    WshShell.Run appUrl, 1, False
+End If
