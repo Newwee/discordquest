@@ -1,13 +1,12 @@
 {
-  "version": "2.3.0",
+  "version": "2.3.1",
   "name": "Discord Quest Auto",
   "releaseDate": "2026-10-24",
   "githubRepo": "https://github.com/Newwee/discordquest",
   "releaseNotes": [
-    "🎮 ระบบ Auto Fake Game Spawner: รองรับเควสต์เล่นเกมบนคอม (PLAY_ON_DESKTOP) 100% โดยไม่ต้องโหลดเกมจริง",
-    "⚡ ตรวจจับและจับคู่ชื่อไฟล์ .exe ของเกมจากฐานข้อมูล Discord Detectable Database อัตโนมัติ",
-    "🛡️ Process จำลองขนาดจิ๋ว (4 KB) ซ่อนหน้าต่าง ปลอดภัย กิน CPU/RAM 0% ไม่รบกวนการใช้งานเครื่อง",
-    "🛑 ระบบ Auto-Kill และล้างไฟล์ Temp อัตโนมัติเมื่อทำเควสต์เสร็จ หรือเมื่อกดยกเลิก/ปิดโปรแกรม",
-    "🎬 รันเควสต์ดูวิดีโอ (Watch Video) และเควสต์เล่นเกมต่อเนื่องในลูปเดียวได้อย่างสมบูรณ์แบบ"
+    "⚡ ระบบ Real-time Server Sync: ดึงสถานะเควสต์จริงจาก Discord API ทุก 30 วินาที ป้องกันแถบเวลานับหลอก",
+    "🔔 ระบบตรวจจับเควสต์ Multi-Platform: แจ้งเตือนทันทีหากเควสต์ต้องการให้กด 'Select a platform' (เลือก PC) ใน Discord",
+    "🎮 ปรับปรุง Fake Game Process: รองรับ SW_SHOWMINNOACTIVE เพื่อให้ Discord Desktop hook และจับเวลาได้อย่างสมบูรณ์แบบ",
+    "🛡️ ป้องกันข้อผิดพลาด Local Time Mismatch เมื่อ Discord Desktop ยังไม่เริ่มนับเวลา"
   ]
 }

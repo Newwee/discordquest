@@ -125,7 +125,7 @@ async function findExecutableForQuest(quest) {
   return clean || 'game.exe';
 }
 
-function spawnFakeGame(exeName) {
+function spawnFakeGame(exeName, gameTitle = '') {
   const stubPath = ensureDummyStub();
   const tempDir = path.join(os.tmpdir(), 'DiscordQuestFakeGames');
   if (!fs.existsSync(tempDir)) fs.mkdirSync(tempDir, { recursive: true });
@@ -136,8 +136,8 @@ function spawnFakeGame(exeName) {
   // Copy stub to target exe name
   fs.copyFileSync(stubPath, targetPath);
 
-  // Spawn process detached
-  const child = spawn(targetPath, [], { detached: true, stdio: 'ignore' });
+  // Spawn process detached with gameTitle argument
+  const child = spawn(targetPath, [gameTitle || cleanName], { detached: true, stdio: 'ignore' });
   child.unref();
 
   return {

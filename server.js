@@ -679,13 +679,14 @@ async function runAutoQuests(token) {
         log(`🎮 กำลังเตรียมเปิด Process จำลองเกม: "${q.name}" (Executable: ${exeName})...`, 'info');
 
         try {
-          activeFakeGame = spawnFakeGame(exeName);
+          activeFakeGame = spawnFakeGame(exeName, q.gameTitle || q.name);
           log(`🚀 รันเกมจำลอง [${exeName}] (PID: ${activeFakeGame.pid}) สำเร็จ! (กิน CPU/RAM 0%)`, 'success');
           log(`⏳ Discord Desktop กำลังตรวจจับสถานะ "Playing ${q.name}" และเริ่มนับเวลา (เป้าหมาย: ${q.targetSeconds}s / ${Math.ceil(q.targetSeconds / 60)} นาที)...`, 'info');
 
           let secDone = q.currentSeconds;
           const target = q.targetSeconds || 900;
           let pollCounter = 0;
+          let zeroWarnCount = 0;
 
           while (secDone < target) {
             if (runnerState.shouldStop) {
@@ -706,17 +707,28 @@ async function runAutoQuests(token) {
               log(`🎮 กำลังเล่นเกม [${q.name}]: ${secDone}/${target}s (${Math.floor(secDone / 60)}/${Math.ceil(target / 60)} นาที - ${runnerState.progress.percent}%)`, 'info');
             }
 
-            // Every 50 seconds, poll Discord API to get the true synced progress
-            if (pollCounter >= 50) {
+            // Every 30 seconds, poll Discord API to get the true synced progress
+            if (pollCounter >= 30) {
               pollCounter = 0;
               try {
                 const refreshed = await getOrFetchQuests(token, true);
                 const updatedQ = (refreshed.quests || []).find(x => x.id === q.id);
                 if (updatedQ) {
-                  if (updatedQ.currentSeconds > secDone) {
-                    secDone = updatedQ.currentSeconds;
+                  if (updatedQ.currentSeconds > 0) {
+                    secDone = Math.max(secDone, updatedQ.currentSeconds);
                     runnerState.progress.currentSeconds = secDone;
                     runnerState.progress.percent = Math.floor((secDone / target) * 100);
+                  } else if (secDone >= 30) {
+                    zeroWarnCount++;
+                    if (zeroWarnCount % 2 === 1) {
+                      log(`⚠️ Discord ยังไม่เริ่มนับเวลาให้เควสต์ "${q.name}" (0s/${target}s)!`, 'warn');
+                      log(`👉 หากใน Discord แสดงปุ่ม "Select a platform to get started" กรุณากดเลือก "PC" ใน Discord ทันที`, 'warn');
+                      log(`👉 และตรวจสอบว่าเปิดแอป Discord Desktop (ในคอม) ทิ้งไว้`, 'warn');
+                    }
+                    // Keep secDone aligned so we don't falsely claim 100%
+                    secDone = 0;
+                    runnerState.progress.currentSeconds = 0;
+                    runnerState.progress.percent = 0;
                   }
                   if (updatedQ.isCompleted) {
                     secDone = target;
