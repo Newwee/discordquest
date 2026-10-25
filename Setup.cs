@@ -67,7 +67,7 @@ namespace DiscordQuestAutoInstaller
 
             Label lblTitle = new Label
             {
-                Text = "Discord Quest Auto v2.0 Setup",
+                Text = "Discord Quest Auto v2.4 Setup",
                 ForeColor = Color.FromArgb(0, 255, 204),
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Location = new Point(16, 12),
@@ -306,6 +306,16 @@ namespace DiscordQuestAutoInstaller
                     lblStatus.Text = "Extracting payload files...";
                     try
                     {
+                        // Terminate any previous background node server instances so files aren't locked
+                        try
+                        {
+                            foreach (Process p in Process.GetProcessesByName("node"))
+                            {
+                                try { p.Kill(); } catch { }
+                            }
+                        }
+                        catch { }
+
                         Directory.CreateDirectory(targetDir);
 
                         // Extract embedded payload.zip resource
