@@ -4,13 +4,16 @@
   "releaseDate": "2026-10-25",
   "githubRepo": "https://github.com/Newwee/discordquest",
   "downloadUrl": "https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip",
+  "urgentNotice": "🚨 [เตือนด่วน 67 ชม.] ยกเลิกคีย์ถาวรแล้ว บังคับอัปเดตเป็น v2.6.0",
+  "deadlineHours": 67,
   "releaseNotes": [
-    "🔒 Next-Gen License Engine: รองรับคีย์ DAQ-3D- (3 วัน), DAQ-1W- (1 สัปดาห์), DAQ-4W- (4 สัปดาห์), DAQ-6M- (6 เดือน)",
-    "🛡️ SHA-256 HWID Lock: ผูกสิทธิ์ 1:1 กับเครื่องด้วย CPU ID + Motherboard UUID + MAC Address อย่างแน่นหนา",
+    "🚨 [ประกาศด่วน บังคับอัปเดต] ให้เวลาเพียง 67 ชั่วโมง ในการอัปเดตเป็นเวอร์ชันใหม่ v2.6.0!",
+    "⚠️ ยกเลิกการใช้งาน 'คีย์ถาวร' ทุกชนิดอย่างเป็นทางการ ระบบเปลี่ยนมาใช้สิทธิ์ผ่าน J3A Store (j3astore.com)",
+    "*(หมายเหตุ: ตัวเลขนับถอยหลัง 67 ชม. เป็น Meme Joke ขำๆ แต่เรื่องยกเลิกคีย์ถาวรและต้องอัปเดตคือเรื่องจริงนะสัส!)*",
+    "🔒 Next-Gen License Engine: รองรับคีย์ระบบใหม่ ผูก HWID Lock 1:1 กับเครื่องด้วย SHA-256",
     "🚫 Anti-Abuse Trial System: ป้องกันการวนใช้คีย์ทดลอง 3 วันซ้ำบนเครื่องเดิมอย่างเด็ดขาด",
     "⏱️ Expiration Checker & Anti-Rollback: ตรวจสอบอายุคีย์ทุก 30 นาที พร้อมระบบป้องกันการโกงเวลาเครื่อง",
-    "🔐 Encrypted Local Storage: เข้ารหัสข้อมูลสิทธิ์ด้วย AES-256-GCM ป้องกันการแก้ไขไฟล์หรือบายพาส 100%",
-    "🛡️ Military-Grade Obfuscation: เข้ารหัสโค้ด JavaScript ด้วย RC4 String Encryption และ Self-Defending ป้องกัน Reverse Engineering",
-    "📊 Real-time License Status Bar: แถบสถานะด้านล่างโปรแกรมแสดงสถานะ, แพ็กเกจ และเวลานับถอยหลังที่เหลือ"
+    "🔐 Encrypted Local Storage: บันทึกสิทธิ์ลงเครื่องด้วย AES-256-GCM ป้องกันการแก้ไขไฟล์ 100%",
+    "⚡ 1-Click Auto Update: กดปุ่มอัปเดตอัตโนมัติในคลิกเดียว รีสตาร์ทและใช้งานต่อได้ทันที"
   ]
 }

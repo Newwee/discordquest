@@ -834,6 +834,9 @@ async function checkForUpdates(openModalOnResult = false) {
       changelogList.appendChild(li);
     });
 
+    const urgentUpdateBanner = document.getElementById('urgentUpdateBanner');
+    const urgentCountdownTimer = document.getElementById('urgentCountdownTimer');
+
     if (data.hasUpdate) {
       // Show badge on button
       if (updateBadge) updateBadge.classList.remove('hidden');
@@ -841,8 +844,21 @@ async function checkForUpdates(openModalOnResult = false) {
       updateStatusText.innerHTML = `🚀 ตรวจพบเวอร์ชันใหม่ <b>v${data.latestVersion}</b> พร้อมให้อัปเดต!`;
       if (btnAutoUpdate) btnAutoUpdate.classList.remove('hidden');
       if (btnDownloadUpdate) btnDownloadUpdate.classList.remove('hidden');
+
+      // Trigger 67-Hour Joke Countdown Banner
+      if (urgentUpdateBanner) {
+        urgentUpdateBanner.classList.remove('hidden');
+        startUrgentCountdown(urgentCountdownTimer);
+      }
+
+      // Auto-popup alert for older versions (e.g. 2.4.1 or older than latest)
+      if (!sessionStorage.getItem('update_modal_shown')) {
+        sessionStorage.setItem('update_modal_shown', 'true');
+        if (updateModal) updateModal.classList.remove('hidden');
+      }
     } else {
       if (updateBadge) updateBadge.classList.add('hidden');
+      if (urgentUpdateBanner) urgentUpdateBanner.classList.add('hidden');
       updateStatusBanner.className = 'update-status-banner success';
       updateStatusText.textContent = '✨ คุณกำลังใช้งานเวอร์ชันล่าสุดแล้ว ไม่จำเป็นต้องอัปเดต';
       if (btnAutoUpdate) btnAutoUpdate.classList.add('hidden');
@@ -857,6 +873,32 @@ async function checkForUpdates(openModalOnResult = false) {
   } finally {
     btnCheckUpdateAgain.disabled = false;
   }
+}
+
+let countdownInterval = null;
+function startUrgentCountdown(timerEl) {
+  if (!timerEl) return;
+  if (countdownInterval) clearInterval(countdownInterval);
+
+  let deadline = Number(localStorage.getItem('urgent_update_deadline'));
+  if (!deadline || isNaN(deadline)) {
+    // 67 hours from now
+    deadline = Date.now() + (67 * 60 * 60 * 1000);
+    localStorage.setItem('urgent_update_deadline', String(deadline));
+  }
+
+  function tick() {
+    const remainingMs = Math.max(0, deadline - Date.now());
+    const totalSec = Math.floor(remainingMs / 1000);
+    const hrs = Math.floor(totalSec / 3600);
+    const mins = Math.floor((totalSec % 3600) / 60);
+    const secs = totalSec % 60;
+
+    const pad = n => String(n).padStart(2, '0');
+    timerEl.textContent = `${pad(hrs)}:${pad(mins)}:${pad(secs)}`;
+  }
+  tick();
+  countdownInterval = setInterval(tick, 1000);
 }
 
 // --- Accounts History & Switcher Functions ---
