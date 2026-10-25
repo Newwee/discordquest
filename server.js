@@ -923,7 +923,17 @@ const server = http.createServer(async (req, res) => {
   // --- API Routes ---
 
   // License API Protection Gate
-  const publicApiRoutes = ['/api/status', '/api/hwid', '/api/license/status', '/api/license/activate', '/api/shutdown'];
+  const publicApiRoutes = [
+    '/api/status',
+    '/api/hwid',
+    '/api/license/status',
+    '/api/license/activate',
+    '/api/version',
+    '/api/check-update',
+    '/api/download-latest',
+    '/api/auto-update',
+    '/api/shutdown'
+  ];
   if (pathname.startsWith('/api/') && !publicApiRoutes.includes(pathname)) {
     if (!isLicensed()) {
       res.writeHead(403, { 'Content-Type': 'application/json' });
