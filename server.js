@@ -1,6 +1,7 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const os = require('node:os');
 const crypto = require('node:crypto');
 const { exec } = require('node:child_process');
 const {
@@ -49,10 +50,10 @@ function getLocalVersionInfo() {
     } catch {}
   }
   return {
-    version: "2.1.0",
+    version: "2.5.0",
     name: "Discord Quest Auto",
     githubRepo: "https://github.com/Newwee/discordquest",
-    releaseNotes: ["เวอร์ชันปัจจุบัน 2.1.0"]
+    releaseNotes: ["เวอร์ชันปัจจุบัน 2.5.0"]
   };
 }
 
@@ -1226,11 +1227,65 @@ const server = http.createServer(async (req, res) => {
     }));
   }
 
-  // 4.6 Direct Download Latest Release (Without exposing raw GitHub link to UI)
+  // 4.6 Direct Download Latest Release (Raw GitHub Direct Link)
   if (pathname === '/api/download-latest' && req.method === 'GET') {
-    const directZipUrl = 'https://github.com/Newwee/discordquest/releases/latest/download/DiscordQuestAuto_Setup.zip';
+    const directZipUrl = 'https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip';
     res.writeHead(302, { 'Location': directZipUrl });
     return res.end();
+  }
+
+  // 4.7 1-Click In-App Auto-Update & Patcher
+  if (pathname === '/api/auto-update' && req.method === 'POST') {
+    log('⚡ เริ่มกระบวนการ Auto-Update: กำลังดาวน์โหลดเวอร์ชันล่าสุด...', 'info');
+    try {
+      const zipUrl = 'https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip';
+      const fetchRes = await fetch(zipUrl);
+      if (!fetchRes.ok) {
+        throw new Error(`ดาวน์โหลดล้มเหลว (HTTP ${fetchRes.status})`);
+      }
+
+      const tempDir = path.join(process.env.TEMP || os.tmpdir(), 'DiscordQuestAuto_Update');
+      if (fs.existsSync(tempDir)) {
+        try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch {}
+      }
+      fs.mkdirSync(tempDir, { recursive: true });
+
+      const zipPath = path.join(tempDir, 'setup_update.zip');
+      const arrayBuf = await fetchRes.arrayBuffer();
+      fs.writeFileSync(zipPath, Buffer.from(arrayBuf));
+
+      log('📦 ดาวน์โหลดเสร็จเรียบร้อย กำลังแตกไฟล์และติดตั้งอัปเดตแบบเงียบ...', 'info');
+
+      // Extract Setup.exe via PowerShell and run /silent
+      const extractScript = `
+Add-Type -AssemblyName System.IO.Compression.FileSystem
+$zip = "${zipPath.replace(/\\/g, '\\\\')}"
+$dest = "${tempDir.replace(/\\/g, '\\\\')}"
+[System.IO.Compression.ZipFile]::ExtractToDirectory($zip, $dest)
+$setup = Join-Path $dest "Setup.exe"
+if (Test-Path $setup) {
+  Start-Process $setup -ArgumentList "/silent", "/dir=\`"${__dirname.replace(/\\/g, '\\\\')}\`""
+}
+`;
+      const scriptPath = path.join(tempDir, 'do_update.ps1');
+      fs.writeFileSync(scriptPath, extractScript, 'utf8');
+
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ success: true, message: 'กำลังติดตั้งอัปเดตและรีสตาร์ทระบบ...' }));
+
+      // Run updater script detached and terminate current process so files can be replaced
+      setTimeout(() => {
+        exec(`powershell -ExecutionPolicy Bypass -File "${scriptPath}"`);
+        setTimeout(() => {
+          process.exit(0);
+        }, 800);
+      }, 400);
+      return;
+    } catch (updateErr) {
+      log(`❌ อัปเดตอัตโนมัติไม่สำเร็จ: ${updateErr.message}`, 'error');
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ success: false, error: updateErr.message }));
+    }
   }
 
   // 5. Fetch Quests & Calculations (Cached & Rate-Limit Shielded)

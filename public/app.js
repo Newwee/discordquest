@@ -46,6 +46,7 @@ const updateModal = document.getElementById('updateModal');
 const btnCheckUpdate = document.getElementById('btnCheckUpdate');
 const updateBadge = document.getElementById('updateBadge');
 const btnCheckUpdateAgain = document.getElementById('btnCheckUpdateAgain');
+const btnAutoUpdate = document.getElementById('btnAutoUpdate');
 const btnDownloadUpdate = document.getElementById('btnDownloadUpdate');
 const btnCloseUpdateModal = document.getElementById('btnCloseUpdateModal');
 const currentVersionTag = document.getElementById('currentVersionTag');
@@ -122,6 +123,7 @@ const runnerPulse = document.getElementById('runnerPulse');
 const runnerSubtext = document.getElementById('runnerSubtext');
 const runnerProgressArea = document.getElementById('runnerProgressArea');
 const activeQuestTitle = document.getElementById('activeQuestTitle');
+const activeQuestETA = document.getElementById('activeQuestETA');
 const activeQuestProgressText = document.getElementById('activeQuestProgressText');
 const activeProgressBar = document.getElementById('activeProgressBar');
 const chkOnlyEnrolled = document.getElementById('chkOnlyEnrolled');
@@ -130,6 +132,7 @@ const btnOpenDiscordNotice = document.getElementById('btnOpenDiscordNotice');
 
 // Quests Container
 const questsContainer = document.getElementById('questsContainer');
+const questSearchInput = document.getElementById('questSearchInput');
 const tabButtons = document.querySelectorAll('.tab-btn');
 
 // Console Elements
@@ -201,31 +204,15 @@ function animateNumber(element, targetVal) {
   requestAnimationFrame(update);
 }
 
-// ReactBits: Spotlight Tracking Engine
+// ReactBits: High-Performance Spotlight Tracking Engine (Butter-Smooth 60FPS, Zero Layout Thrashing)
 function setupSpotlightEngine() {
-  let throttleTimer = null;
-  document.addEventListener('mousemove', (e) => {
-    if (throttleTimer) return;
-    throttleTimer = requestAnimationFrame(() => {
-      throttleTimer = null;
-      const cards = document.querySelectorAll('.spotlight-card');
-      const clientX = e.clientX;
-      const clientY = e.clientY;
-      for (let i = 0; i < cards.length; i++) {
-        const card = cards[i];
-        const rect = card.getBoundingClientRect();
-        if (
-          clientX >= rect.left - 200 &&
-          clientX <= rect.right + 200 &&
-          clientY >= rect.top - 200 &&
-          clientY <= rect.bottom + 200
-        ) {
-          card.style.setProperty('--mouse-x', `${clientX - rect.left}px`);
-          card.style.setProperty('--mouse-y', `${clientY - rect.top}px`);
-        }
-      }
-    });
-  });
+  document.addEventListener('pointermove', (e) => {
+    const card = e.target.closest('.spotlight-card');
+    if (!card) return;
+    const rect = card.getBoundingClientRect();
+    card.style.setProperty('--mouse-x', `${e.clientX - rect.left}px`);
+    card.style.setProperty('--mouse-y', `${e.clientY - rect.top}px`);
+  }, { passive: true });
 }
 
 // Setup Server-Sent Events (SSE)
@@ -463,6 +450,13 @@ function setupEventListeners() {
     });
   });
 
+  // Real-Time Search Filter
+  if (questSearchInput) {
+    questSearchInput.addEventListener('input', () => {
+      renderQuests();
+    });
+  }
+
   // 7. USER GUIDE MODAL
   if (btnOpenGuide) {
     btnOpenGuide.addEventListener('click', openGuideModal);
@@ -481,6 +475,48 @@ function setupEventListeners() {
   if (btnDownloadUpdate) {
     btnDownloadUpdate.addEventListener('click', () => {
       if (latestReleaseUrl) window.open(latestReleaseUrl, '_blank');
+    });
+  }
+  if (btnAutoUpdate) {
+    btnAutoUpdate.addEventListener('click', async () => {
+      if (!confirm('ยืนยันเริ่มการอัปเดตระบบอัตโนมัติ? (โปรแกรมจะดาวน์โหลดไฟล์และรีสตาร์ทตัวมันเองอัตโนมัติในไม่กี่วินาที)')) {
+        return;
+      }
+      btnAutoUpdate.disabled = true;
+      if (btnDownloadUpdate) btnDownloadUpdate.classList.add('hidden');
+      updateStatusBanner.className = 'update-status-banner info';
+      updateStatusText.innerHTML = '<span class="sync-dot"></span> กำลังดาวน์โหลดและติดตั้งเวอร์ชันล่าสุด... กรุณารอสักครู่';
+
+      try {
+        const res = await fetch('/api/auto-update', { method: 'POST' });
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.error || 'ดาวน์โหลดไม่สำเร็จ');
+
+        updateStatusBanner.className = 'update-status-banner success';
+        updateStatusText.textContent = '🚀 กำลังรีสตาร์ทโปรแกรมเป็นเวอร์ชันใหม่...';
+
+        let retries = 0;
+        const poll = setInterval(async () => {
+          retries++;
+          try {
+            const ver = await fetch('/api/version');
+            if (ver.ok) {
+              clearInterval(poll);
+              location.reload();
+            }
+          } catch (e) {
+            if (retries > 30) {
+              clearInterval(poll);
+              location.reload();
+            }
+          }
+        }, 1200);
+      } catch (err) {
+        updateStatusBanner.className = 'update-status-banner error';
+        updateStatusText.textContent = `❌ อัปเดตไม่สำเร็จ: ${err.message}`;
+        btnAutoUpdate.disabled = false;
+        if (btnDownloadUpdate) btnDownloadUpdate.classList.remove('hidden');
+      }
     });
   }
   if (btnCloseUpdateModal) {
@@ -610,12 +646,14 @@ async function checkForUpdates(openModalOnResult = false) {
       if (updateBadge) updateBadge.classList.remove('hidden');
       updateStatusBanner.className = 'update-status-banner has-update';
       updateStatusText.innerHTML = `🚀 ตรวจพบเวอร์ชันใหม่ <b>v${data.latestVersion}</b> พร้อมให้อัปเดต!`;
-      btnDownloadUpdate.classList.remove('hidden');
+      if (btnAutoUpdate) btnAutoUpdate.classList.remove('hidden');
+      if (btnDownloadUpdate) btnDownloadUpdate.classList.remove('hidden');
     } else {
       if (updateBadge) updateBadge.classList.add('hidden');
       updateStatusBanner.className = 'update-status-banner success';
       updateStatusText.textContent = '✨ คุณกำลังใช้งานเวอร์ชันล่าสุดแล้ว ไม่จำเป็นต้องอัปเดต';
-      btnDownloadUpdate.classList.add('hidden');
+      if (btnAutoUpdate) btnAutoUpdate.classList.add('hidden');
+      if (btnDownloadUpdate) btnDownloadUpdate.classList.add('hidden');
     }
   } catch (err) {
     console.warn('Update check failed:', err);
@@ -869,6 +907,16 @@ function renderQuests() {
     filtered = currentQuests.filter(q => q.isExpired);
   }
 
+  // Real-Time Search Filter
+  const query = (questSearchInput?.value || '').trim().toLowerCase();
+  if (query) {
+    filtered = filtered.filter(q => 
+      (q.name && q.name.toLowerCase().includes(query)) ||
+      (q.gameTitle && q.gameTitle.toLowerCase().includes(query)) ||
+      (q.taskType && q.taskType.toLowerCase().includes(query))
+    );
+  }
+
   if (filtered.length === 0) {
     questsContainer.innerHTML = `
       <div class="empty-state">
@@ -950,7 +998,7 @@ function renderQuests() {
 
       <div class="quest-card-footer">
         ${statusBadge}
-        ${q.statusText === 'READY_TO_CLAIM' ? '<span class="text-green" style="font-size: 0.75rem;">🎁 รับได้ใน Discord</span>' : ''}
+        ${q.statusText === 'READY_TO_CLAIM' ? '<button class="btn btn-small btn-success" onclick="window.open(\'https://discord.com/app\', \'_blank\')" style="padding: 2px 8px; font-size: 0.72rem; display: inline-flex; align-items: center; gap: 4px;">🎁 รับของรางวัลใน Discord</button>' : ''}
       </div>
     `;
 
@@ -971,9 +1019,38 @@ function startStatusPolling() {
   }, 1000);
 }
 
+function playSuccessChime() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    const now = ctx.currentTime;
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, now); // D5
+    osc1.frequency.exponentialRampToValueAtTime(880, now + 0.15); // A5
+    gain1.gain.setValueAtTime(0.12, now);
+    gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.45);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start(now);
+    osc1.stop(now + 0.45);
+  } catch {}
+}
+
 function updateRunnerUI(state) {
+  const previouslyRunning = isRunning;
   isRunning = state.isRunning;
   setRunnerActive(isRunning);
+
+  // Check if automation just concluded
+  if (previouslyRunning && !isRunning && state.progress.total > 0 && state.progress.done >= state.progress.total) {
+    playSuccessChime();
+    appendLog({
+      time: new Date().toLocaleTimeString('th-TH'),
+      message: '🎉 กระบวนการเควสต์อัตโนมัติทั้งหมดเสร็จสิ้นเรียบร้อยแล้ว!',
+      type: 'success'
+    });
+  }
 
   if (isRunning && state.currentQuest) {
     runnerSubtext.textContent = `กำลังรันเควสต์: "${state.progress.currentName}" [${state.progress.currentType}]`;
@@ -981,6 +1058,19 @@ function updateRunnerUI(state) {
     activeQuestTitle.textContent = `${state.progress.currentName} (${state.progress.currentType})`;
     activeQuestProgressText.textContent = `${state.progress.currentSeconds}s / ${state.progress.targetSeconds}s (${state.progress.percent}%)`;
     activeProgressBar.style.width = `${state.progress.percent}%`;
+
+    // Smart ETA Calculation
+    if (activeQuestETA) {
+      const remainingSec = Math.max(0, (state.progress.targetSeconds || 0) - (state.progress.currentSeconds || 0));
+      if (remainingSec <= 0) {
+        activeQuestETA.textContent = '✨ ใกล้เสร็จสิ้น...';
+      } else if (remainingSec < 60) {
+        activeQuestETA.textContent = `⏱️ เหลืออีก ~${remainingSec}s`;
+      } else {
+        const remainingMin = Math.ceil(remainingSec / 60);
+        activeQuestETA.textContent = `⏱️ เหลืออีก ~${remainingMin} นาที (${remainingSec}s)`;
+      }
+    }
   } else {
     runnerProgressArea.classList.add('hidden');
     runnerSubtext.textContent = isRunning 

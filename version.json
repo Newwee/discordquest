@@ -1,12 +1,15 @@
 {
-  "version": "2.4.1",
+  "version": "2.5.0",
   "name": "Discord Quest Auto",
   "releaseDate": "2026-10-25",
   "githubRepo": "https://github.com/Newwee/discordquest",
+  "downloadUrl": "https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip",
   "releaseNotes": [
-    "🖥️ Standalone Desktop App Window: เปิดโปรแกรมในหน้าต่างแยกอิสระ (Chromium App Mode) ไร้แถบ URL เสมือนแอปเดสก์ท็อปแท้",
-    "🛡️ ซ่อนลิงก์ GitHub จากหน้าต่างอัปเดต โดยยังคงระบบเช็คและดาวน์โหลดอัปเดตอัตโนมัติได้ 100%",
-    "🔑 เพิ่มหน้าเปิดใช้งาน License Key Activation Screen สไตล์ Dark Glassmorphism ระดับพรีเมียม",
-    "⚡ ปรับปรุงระบบตัวเปิดแอป launch.vbs และสลับบราวเซอร์อัตโนมัติ (Chrome / Edge Fallback)"
+    "⚡ 1-Click In-App Auto Update: ระบบกดอัปเดตอัตโนมัติในคลิกเดียวจากในแอป ไม่ต้องดาวน์โหลดหรือแตกไฟล์เอง",
+    "🔍 Live Quest Search Box: ค้นหาเควสต์และชื่อเกมได้ทันทีแบบ Real-time",
+    "⏱️ Smart ETA Counter: แสดงเวลาที่เหลือก่อนเควสต์เสร็จเป็นนาทีแบบชัดเจน",
+    "🚀 Ultra-Smooth 60FPS UI: ปรับปรุงประสิทธิภาพ Spotlight Animation และ Render เควสต์ลื่นไหลไร้สะดุด",
+    "🎁 Quick Claim Action: เพิ่มปุ่มกดเปิด Discord ไปรับของรางวัลเควสต์ที่เสร็จแล้วได้ทันที",
+    "🔔 Sound & Finish Notification: เพิ่มเสียงแจ้งเตือนและข้อความเมื่อเควสต์ทั้งหมดรันเสร็จสมบูรณ์"
   ]
 }

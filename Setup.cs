@@ -12,8 +12,8 @@ using System.Diagnostics;
 [assembly: AssemblyProduct("J3A Discord AutoQuest")]
 [assembly: AssemblyCopyright("Copyright © 2026 J3A Software Solutions")]
 [assembly: AssemblyTrademark("J3A")]
-[assembly: AssemblyVersion("2.4.1.0")]
-[assembly: AssemblyFileVersion("2.4.1.0")]
+[assembly: AssemblyVersion("2.5.0.0")]
+[assembly: AssemblyFileVersion("2.5.0.0")]
 
 namespace DiscordQuestAutoInstaller
 {
@@ -67,7 +67,7 @@ namespace DiscordQuestAutoInstaller
 
             Label lblTitle = new Label
             {
-                Text = "Discord Quest Auto v2.4 Setup",
+                Text = "Discord Quest Auto v2.5 Setup",
                 ForeColor = Color.FromArgb(0, 255, 204),
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Location = new Point(16, 12),
@@ -413,11 +413,93 @@ namespace DiscordQuestAutoInstaller
         }
 
         [STAThread]
-        static void Main()
+        static void Main(string[] args)
         {
+            bool isSilent = false;
+            string customDir = null;
+            if (args != null)
+            {
+                foreach (string a in args)
+                {
+                    if (string.Equals(a, "/silent", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "/auto", StringComparison.OrdinalIgnoreCase))
+                    {
+                        isSilent = true;
+                    }
+                    else if (a.StartsWith("/dir=", StringComparison.OrdinalIgnoreCase))
+                    {
+                        customDir = a.Substring(5).Trim('\"');
+                    }
+                }
+            }
+
+            if (isSilent)
+            {
+                DoSilentInstall(customDir);
+                return;
+            }
+
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
             Application.Run(new SetupForm());
+        }
+
+        private static void DoSilentInstall(string targetDir)
+        {
+            if (string.IsNullOrEmpty(targetDir))
+            {
+                targetDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DiscordQuestAuto");
+            }
+
+            try
+            {
+                foreach (Process p in Process.GetProcessesByName("node"))
+                {
+                    try { p.Kill(); } catch { }
+                }
+                System.Threading.Thread.Sleep(500);
+
+                Directory.CreateDirectory(targetDir);
+                Assembly asm = Assembly.GetExecutingAssembly();
+                using (Stream stream = asm.GetManifestResourceStream("payload.zip"))
+                {
+                    if (stream != null)
+                    {
+                        using (ZipArchive archive = new ZipArchive(stream))
+                        {
+                            ExtractZipEntries(archive, targetDir);
+                        }
+                    }
+                }
+
+                // Register shortcut
+                string ps1 = Path.Combine(targetDir, "install_shortcut.ps1");
+                if (File.Exists(ps1))
+                {
+                    ProcessStartInfo psi = new ProcessStartInfo
+                    {
+                        FileName = "powershell.exe",
+                        Arguments = "-ExecutionPolicy Bypass -File \"" + ps1 + "\"",
+                        WindowStyle = ProcessWindowStyle.Hidden,
+                        WorkingDirectory = targetDir,
+                        CreateNoWindow = true
+                    };
+                    Process p = Process.Start(psi);
+                    if (p != null) p.WaitForExit(3000);
+                }
+
+                // Launch updated program
+                string vbs = Path.Combine(targetDir, "launch.vbs");
+                if (File.Exists(vbs))
+                {
+                    Process.Start(new ProcessStartInfo
+                    {
+                        FileName = "wscript.exe",
+                        Arguments = "\"" + vbs + "\"",
+                        WorkingDirectory = targetDir
+                    });
+                }
+            }
+            catch { }
         }
     }
 }

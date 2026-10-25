@@ -225,7 +225,10 @@
         <div id="runnerProgressArea" class="runner-progress-box hidden">
           <div class="progress-info-row">
             <span id="activeQuestTitle" class="active-quest-name">Quest Running</span>
-            <span id="activeQuestProgressText" class="active-quest-numbers">0s / 0s (0%)</span>
+            <div class="progress-right-col" style="display: flex; gap: 12px; align-items: center;">
+              <span id="activeQuestETA" class="active-quest-eta text-cyan" style="font-size: 0.82rem; font-weight: 600;">⏱️ กำลังคำนวณเวลา...</span>
+              <span id="activeQuestProgressText" class="active-quest-numbers">0s / 0s (0%)</span>
+            </div>
           </div>
           <div class="progress-bar-track">
             <div id="activeProgressBar" class="progress-bar-fill" style="width: 0%;">
@@ -264,6 +267,9 @@
             <button class="tab-btn" data-tab="desktop">🎮 เล่นเกม (<span id="countTabDesktop">0</span>)</button>
             <button class="tab-btn" data-tab="completed">✅ ทำเสร็จแล้ว (<span id="countTabCompleted">0</span>)</button>
             <button class="tab-btn" data-tab="expired">⏳ หมดอายุ/ประวัติ (<span id="countTabExpired">0</span>)</button>
+          </div>
+          <div class="quests-search-box">
+            <input type="text" id="questSearchInput" class="quest-search-input" placeholder="🔍 ค้นหาชื่อเควสต์ หรือเกม..." autocomplete="off">
           </div>
         </div>
 
@@ -486,9 +492,13 @@
           <svg viewBox="0 0 24 24" width="16" height="16" stroke="currentColor" stroke-width="2" fill="none"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/></svg>
           ตรวจสอบอีกครั้ง
         </button>
-        <button id="btnDownloadUpdate" class="btn btn-cyan btn-glow hidden">
+        <button id="btnAutoUpdate" class="btn btn-primary btn-glow hidden">
+          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+          ⚡ อัปเดตอัตโนมัติทันที
+        </button>
+        <button id="btnDownloadUpdate" class="btn btn-cyan hidden">
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-          ดาวน์โหลดเวอร์ชันใหม่
+          ดาวน์โหลดไฟล์ Setup (.zip)
         </button>
         <button id="btnCloseUpdateModal" class="btn btn-secondary">ปิด</button>
       </div>
