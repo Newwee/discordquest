@@ -6,6 +6,15 @@ using System.Windows.Forms;
 using System.Reflection;
 using System.Diagnostics;
 
+[assembly: AssemblyTitle("J3A Discord AutoQuest Installer")]
+[assembly: AssemblyDescription("J3A Discord AutoQuest Setup & Installation Wizard")]
+[assembly: AssemblyCompany("J3A Software Solutions")]
+[assembly: AssemblyProduct("J3A Discord AutoQuest")]
+[assembly: AssemblyCopyright("Copyright © 2026 J3A Software Solutions")]
+[assembly: AssemblyTrademark("J3A")]
+[assembly: AssemblyVersion("2.4.1.0")]
+[assembly: AssemblyFileVersion("2.4.1.0")]
+
 namespace DiscordQuestAutoInstaller
 {
     public class SetupForm : Form

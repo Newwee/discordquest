@@ -20,7 +20,22 @@ On Error GoTo 0
 If Not isServerRunning Then
     WshShell.CurrentDirectory = currentDir
     WshShell.Run "cmd /c node server.js", 0, False
-    WScript.Sleep 1000
+    
+    ' Wait until server is fully ready to accept connections (Polling up to 6 seconds)
+    For i = 1 To 12
+        WScript.Sleep 500
+        On Error Resume Next
+        Set checkHttp = CreateObject("MSXML2.ServerXMLHTTP.6.0")
+        checkHttp.setTimeouts 500, 500, 500, 500
+        checkHttp.open "GET", "http://127.0.0.1:4545/api/status", False
+        checkHttp.send
+        If Err.Number = 0 Then
+            If checkHttp.status = 200 Then
+                Exit For
+            End If
+        End If
+        On Error GoTo 0
+    Next
 End If
 
 ' App Mode Window Launcher (Stand-alone window like a real desktop app)

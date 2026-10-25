@@ -1,7 +1,19 @@
 const http = require('node:http');
 const fs = require('node:fs');
 const path = require('node:path');
+const crypto = require('node:crypto');
 const { exec } = require('node:child_process');
+const {
+  BASE_DIR,
+  LICENSE_KEY_FILE,
+  getSystemHWID,
+  maskKey,
+  isLicensed,
+  getActiveKey,
+  checkStoredLicense,
+  activateLicenseKey,
+  logoutLicense
+} = require('./license_gate');
 const { findLocalDiscordToken } = require('./token_extractor');
 const {
   ensureDummyStub,
@@ -22,8 +34,13 @@ let currentConfig = {
   autoEnroll: true,
   videoSpeed: 7, // seconds increment per pulse
   skipGameQuests: true, // Only do watch/video quests, skip game playing quests
+  onlyEnrolledQuests: true, // Only run quests accepted in Discord client, skip invisible/untargeted
   accounts: []
 };
+
+function getMachineHWID() {
+  return getSystemHWID();
+}
 
 function getLocalVersionInfo() {
   if (fs.existsSync(VERSION_FILE)) {
@@ -277,9 +294,20 @@ function computeQuestStats(parsed) {
   let completedCount = 0;
   let readyToClaimCount = 0;
   let pendingCount = 0;
+  let activeCount = 0;
+  let expiredCount = 0;
+  let enrolledCount = 0;
 
   for (const q of parsed) {
+    if (q.isExpired) {
+      expiredCount++;
+      continue; // Filter out expired campaigns from active stats to prevent ghost numbers
+    }
+
+    activeCount++;
     totalOrbs += q.orbs;
+    if (q.isEnrolled) enrolledCount++;
+
     if (q.statusText === 'CLAIMED') {
       claimedOrbs += q.orbs;
       completedCount++;
@@ -295,6 +323,9 @@ function computeQuestStats(parsed) {
 
   return {
     totalQuests: parsed.length,
+    activeQuests: activeCount,
+    expiredQuests: expiredCount,
+    enrolledQuests: enrolledCount,
     completedQuests: completedCount,
     readyToClaimQuests: readyToClaimCount,
     pendingQuests: pendingCount,
@@ -484,8 +515,12 @@ function parseQuestInfo(quest) {
     statusText = "CLAIMED";
   } else if (isCompleted) {
     statusText = "READY_TO_CLAIM";
+  } else if (isExpired) {
+    statusText = "EXPIRED";
   } else if (isEnrolled) {
     statusText = "IN_PROGRESS";
+  } else {
+    statusText = "NOT_ENROLLED";
   }
 
   return {
@@ -513,7 +548,7 @@ function parseQuestInfo(quest) {
 async function enrollQuest(token, questId) {
   const res = await fetch(`https://discord.com/api/v9/quests/${questId}/enroll`, {
     method: 'POST',
-    headers: getDiscordHeaders(token),
+    headers: getDiscordClientHeaders(token),
     body: JSON.stringify({
       location: 11,
       is_targeted: false,
@@ -523,7 +558,15 @@ async function enrollQuest(token, questId) {
   });
   if (!res.ok) {
     const errText = await res.text();
-    throw new Error(`Enroll failed (${res.status}): ${errText}`);
+    let msg = '';
+    try {
+      const parsed = JSON.parse(errText);
+      msg = parsed.message || '';
+    } catch {}
+    const err = new Error(`Enroll failed (${res.status}): ${msg || errText}`);
+    err.status = res.status;
+    err.raw = errText;
+    throw err;
   }
   return await res.json();
 }
@@ -532,7 +575,7 @@ async function enrollQuest(token, questId) {
 async function sendVideoProgress(token, questId, timestamp) {
   const res = await fetch(`https://discord.com/api/v9/quests/${questId}/video-progress`, {
     method: 'POST',
-    headers: getDiscordHeaders(token),
+    headers: getDiscordClientHeaders(token),
     body: JSON.stringify({ timestamp })
   });
   if (!res.ok) {
@@ -585,11 +628,12 @@ async function runAutoQuests(token) {
   runnerState.isRunning = true;
   runnerState.shouldStop = false;
   log('🚀 เริ่มต้นการรัน Discord Quest อัตโนมัติ (No AutoClaim Mode)...', 'info');
+  log('💡 คำแนะนำ: สำหรับเควสต์เล่นเกม กรุณากดปุ่ม "รับเควสต์ (Accept Quest)" ในแอป Discord ก่อนเสมอ เพื่อเปิดรับคะแนน', 'info');
 
   try {
     // 1. Fetch current quest list safely with cache shield
     log('กำลังดึงข้อมูลเควสต์จาก Discord...', 'info');
-    let questResult = await getOrFetchQuests(token);
+    let questResult = await getOrFetchQuests(token, true);
 
     if (questResult.rateLimited && (!questResult.quests || questResult.quests.length === 0)) {
       log(`⏳ กำลังติด Rate Limit รอก่อน ${questResult.retryAfter} วินาที...`, 'warn');
@@ -598,10 +642,11 @@ async function runAutoQuests(token) {
     }
 
     const parsedList = questResult.quests || [];
-    const pendingQuests = parsedList.filter(q => !q.isCompleted && !q.isExpired);
-    const readyToClaimCount = parsedList.filter(q => q.statusText === 'READY_TO_CLAIM').length;
+    const nonExpiredQuests = parsedList.filter(q => !q.isExpired);
+    const pendingQuests = nonExpiredQuests.filter(q => !q.isCompleted);
+    const readyToClaimCount = nonExpiredQuests.filter(q => q.statusText === 'READY_TO_CLAIM').length;
 
-    log(`พบเควสต์ทั้งหมด: ${parsedList.length} รายการ (ทำเสร็จรอเคลม: ${readyToClaimCount}, ต้องทำต่อ: ${pendingQuests.length})`, 'info');
+    log(`พบเควสต์ที่เปิดอยู่: ${nonExpiredQuests.length} รายการ (ทำเสร็จรอเคลม: ${readyToClaimCount}, ต้องทำต่อ: ${pendingQuests.length}, หมดอายุ/ไม่นำมาคิด: ${parsedList.length - nonExpiredQuests.length} รายการ)`, 'info');
 
     if (readyToClaimCount > 0) {
       log(`💡 มี ${readyToClaimCount} เควสต์ที่ทำเสร็จแล้ว สามารถเข้าไปกดรับของรางวัลใน Discord ได้เลย (ข้ามการเคลมอัตโนมัติเพื่อความปลอดภัย)`, 'warn');
@@ -613,12 +658,27 @@ async function runAutoQuests(token) {
       return;
     }
 
+    // Filter: Only run quests accepted/enrolled in Discord client if enabled
+    let candidateQuests = pendingQuests;
+    if (currentConfig.onlyEnrolledQuests !== false) {
+      const unenrolled = pendingQuests.filter(q => !q.isEnrolled);
+      candidateQuests = pendingQuests.filter(q => q.isEnrolled);
+      if (unenrolled.length > 0) {
+        log(`🛡️ เปิดโหมดกรอง: ข้ามเควสต์ที่ยังไม่ได้กดรับใน Discord ${unenrolled.length} รายการ (ทำเฉพาะเควสต์ที่กดรับแล้ว ${candidateQuests.length} รายการ เพื่อป้องกันเควสต์ผี/นอกภูมิภาค)`, 'info');
+      }
+      if (candidateQuests.length === 0) {
+        log('⚠️ ไม่พบเควสต์ที่คุณกดรับไว้ใน Discord เลย! กรุณาเปิดแอป Discord -> Discover -> Quests แล้วกดปุ่ม "รับเควสต์ (Accept Quest)" ในเควสต์ที่ต้องการก่อนเริ่ม', 'warn');
+        runnerState.isRunning = false;
+        return;
+      }
+    }
+
     // Identify Watch/Video quests vs Game Playing quests
     const isWatchQuest = (q) => q.taskType.includes('VIDEO') || q.taskType.includes('WATCH') || q.taskType.includes('STREAM');
-    const watchQuests = pendingQuests.filter(isWatchQuest);
-    const gameQuests = pendingQuests.filter(q => !isWatchQuest(q));
+    const watchQuests = candidateQuests.filter(isWatchQuest);
+    const gameQuests = candidateQuests.filter(q => !isWatchQuest(q));
 
-    let questsToRun = pendingQuests;
+    let questsToRun = candidateQuests;
     if (currentConfig.skipGameQuests !== false) {
       questsToRun = watchQuests;
       log(`⚡ การตั้งค่า: ข้ามเควสต์เล่นเกมทั้งหมด (${gameQuests.length} เควสต์) • ทำเฉพาะเควสต์ดูเวลา/วิดีโอ (${watchQuests.length} เควสต์)`, 'info');
@@ -644,7 +704,7 @@ async function runAutoQuests(token) {
         return;
       }
     } else {
-      log(`⚡ การตั้งค่า: ทำทุกเควสต์รวมถึงเควสต์เล่นเกม (${pendingQuests.length} เควสต์: ดูคลิป ${watchQuests.length} + เล่นเกม ${gameQuests.length}) ด้วย Fake Game Spawner 🎮`, 'info');
+      log(`⚡ การตั้งค่า: ทำทุกเควสต์รวมถึงเควสต์เล่นเกม (${candidateQuests.length} เควสต์: ดูคลิป ${watchQuests.length} + เล่นเกม ${gameQuests.length}) ด้วย Fake Game Spawner 🎮`, 'info');
     }
 
     // Sort: Video quests first, then game quests
@@ -677,10 +737,15 @@ async function runAutoQuests(token) {
       if (!q.isEnrolled) {
         try {
           await enrollQuest(token, q.id);
+          q.isEnrolled = true;
           log(`✅ เข้าร่วมเควสต์สำเร็จ (Enrolled): ${q.name}`, 'success');
           await new Promise(r => setTimeout(r, 1200));
         } catch (err) {
-          log(`⚠️ เข้าร่วมเควสต์ไม่ผ่าน (${q.name}): ${err.message}`, 'warn');
+          log(`⚠️ ไม่สามารถกดรับเควสต์ "${q.name}": ${err.message}`, 'warn');
+          log(`⏭️ ข้ามเควสต์ "${q.name}" (กรุณากดรับในแอป Discord ก่อน หากต้องการทำเควสต์นี้)`, 'warn');
+          runnerState.progress.done++;
+          await new Promise(r => setTimeout(r, 1500));
+          continue;
         }
       }
 
@@ -778,6 +843,10 @@ async function runAutoQuests(token) {
                 break;
               }
             } catch (hbErr) {
+              if (hbErr.status === 404 || hbErr.message.includes('expired') || hbErr.message.includes('260017')) {
+                log(`⚠️ เควสต์ "${q.name}" หมดอายุหรือถูกปิดจากเซิร์ฟเวอร์ Discord แล้ว (ข้าม)`, 'warn');
+                break;
+              }
               if (hbErr.retryAfter) {
                 const waitSec = Math.ceil(hbErr.retryAfter);
                 log(`⏳ ติด Rate Limit รอก่อน ${waitSec} วินาที...`, 'warn');
@@ -799,9 +868,12 @@ async function runAutoQuests(token) {
             activeFakeGame = null;
           }
         }
+      } else if (q.taskType.includes('STREAM')) {
+        log(`ℹ️ เควสต์ "${q.name}" เป็นประเภท [สตรีมหน้าจอ] ต้องสตรีมให้เพื่อนในห้องเสียงดู (ระบบข้ามให้อัตโนมัติ)`, 'info');
+      } else if (q.taskType.includes('ACHIEVEMENT') || q.taskType.includes('ACTIVITY')) {
+        log(`ℹ️ เควสต์ "${q.name}" เป็นประเภท [ภารกิจในกิจกรรม/เกม] ซึ่งต้องเล่นในเกมจริง (ระบบข้ามให้อัตโนมัติ)`, 'info');
       } else {
-        // Stream / Activity / Console
-        log(`ℹ️ เควสต์ "${q.name}" เป็นประเภท [${q.taskType}] (ข้าม)`, 'info');
+        log(`ℹ️ เควสต์ "${q.name}" เป็นประเภท [${q.taskType}] ซึ่งยังไม่รองรับระบบบอทอัตโนมัติ (ข้าม)`, 'info');
       }
 
       runnerState.progress.done++;
@@ -848,6 +920,19 @@ const server = http.createServer(async (req, res) => {
   }
 
   // --- API Routes ---
+
+  // License API Protection Gate
+  const publicApiRoutes = ['/api/status', '/api/hwid', '/api/license/status', '/api/license/activate', '/api/shutdown'];
+  if (pathname.startsWith('/api/') && !publicApiRoutes.includes(pathname)) {
+    if (!isLicensed()) {
+      res.writeHead(403, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        success: false,
+        error: 'กรุณาเปิดใช้งาน License Key ก่อนเริ่มใช้งานระบบ',
+        licenseRequired: true
+      }));
+    }
+  }
 
   // 1. SSE Logs Stream
   if (pathname === '/api/logs') {
@@ -993,6 +1078,7 @@ const server = http.createServer(async (req, res) => {
     return res.end(JSON.stringify({
       skipGameQuests: currentConfig.skipGameQuests !== false,
       autoEnroll: currentConfig.autoEnroll !== false,
+      onlyEnrolledQuests: currentConfig.onlyEnrolledQuests !== false,
       videoSpeed: currentConfig.videoSpeed || 7
     }));
   }
@@ -1010,6 +1096,9 @@ const server = http.createServer(async (req, res) => {
       if (typeof data.autoEnroll === 'boolean') {
         currentConfig.autoEnroll = data.autoEnroll;
       }
+      if (typeof data.onlyEnrolledQuests === 'boolean') {
+        currentConfig.onlyEnrolledQuests = data.onlyEnrolledQuests;
+      }
       if (typeof data.videoSpeed === 'number') {
         currentConfig.videoSpeed = data.videoSpeed;
       }
@@ -1020,11 +1109,61 @@ const server = http.createServer(async (req, res) => {
         settings: {
           skipGameQuests: currentConfig.skipGameQuests,
           autoEnroll: currentConfig.autoEnroll,
+          onlyEnrolledQuests: currentConfig.onlyEnrolledQuests,
           videoSpeed: currentConfig.videoSpeed
         }
       }));
     });
     return;
+  }
+
+  // 4.3.3 Get Machine HWID
+  if (pathname === '/api/hwid' && req.method === 'GET') {
+    const hwid = getSystemHWID();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ hwid }));
+  }
+
+  // 4.3.4 Get License Status
+  if (pathname === '/api/license/status' && req.method === 'GET') {
+    const hwid = getSystemHWID();
+    const active = isLicensed();
+    const key = getActiveKey();
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({
+      activated: active,
+      key: maskKey(key),
+      rawKey: key,
+      hwid
+    }));
+  }
+
+  // 4.3.5 Activate License via Web UI
+  if (pathname === '/api/license/activate' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', async () => {
+      let data = {};
+      try { data = JSON.parse(body || '{}'); } catch {}
+      const result = await activateLicenseKey(data.key);
+      if (result.success) {
+        log(`🔑 เปิดใช้งาน License Key สำเร็จ: ${maskKey(result.key)}`, 'success');
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      } else {
+        res.writeHead(400, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify(result));
+      }
+    });
+    return;
+  }
+
+  // 4.3.6 Logout / Remove License Key
+  if (pathname === '/api/license/logout' && req.method === 'POST') {
+    logoutLicense();
+    log('🚪 ออกจากระบบและลบสิทธิ์ License Key บนเครื่องนี้เรียบร้อยแล้ว', 'info');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ success: true, message: 'ออกจากระบบเรียบร้อยแล้ว' }));
   }
 
   // 4.4 Get Version Info
@@ -1182,9 +1321,15 @@ const server = http.createServer(async (req, res) => {
     return;
   }
 
-  // --- Static File Serving ---
+  // --- Static File Serving & Dynamic License Routing ---
   let safePath = path.normalize(pathname).replace(/^(\.\.[\/\\])+/, '');
-  if (safePath === '/' || safePath === '\\') safePath = '/index.html';
+  if (safePath === '/' || safePath === '\\') {
+    if (!isLicensed()) {
+      safePath = '/license.html';
+    } else {
+      safePath = '/index.html';
+    }
+  }
   const filePath = path.join(PUBLIC_DIR, safePath);
 
   if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
@@ -1198,7 +1343,16 @@ const server = http.createServer(async (req, res) => {
   }
 });
 
+// --- Server Startup (Instant Port Binding & Non-Blocking License Check) ---
 server.listen(PORT, '127.0.0.1', () => {
   log(`🌟 Discord Quest Auto Server พร้อมทำงานที่ http://localhost:${PORT}`, 'success');
   console.log(`Server running at http://localhost:${PORT}`);
+
+  checkStoredLicense().then(result => {
+    if (result.success) {
+      log(`🔑 License ผ่านการตรวจสอบแล้ว: ${maskKey(result.key)} (HWID: ${result.hwid})`, 'success');
+    } else {
+      log(`🔒 ยังไม่ได้เปิดใช้งาน License Key กรุณาเปิดใช้งานที่หน้าต่างโปรแกรม http://localhost:${PORT}`, 'warn');
+    }
+  });
 });

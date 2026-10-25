@@ -851,9 +851,53 @@ body {
 .badge-desktop { background: rgba(88, 101, 242, 0.18); color: #8ba2ff; border: 1px solid rgba(88, 101, 242, 0.35); }
 .badge-stream { background: rgba(155, 89, 182, 0.18); color: #d29bfd; border: 1px solid rgba(155, 89, 182, 0.35); }
 
-.badge-status-completed { background: rgba(35, 165, 90, 0.22); color: #2ecc71; }
+.badge-status-completed { background: rgba(35, 165, 90, 0.22); color: #2ecc71; border: 1px solid rgba(46, 204, 113, 0.4); }
 .badge-status-ready { background: rgba(0, 255, 204, 0.2); color: #00ffcc; border: 1px solid var(--accent-cyan); box-shadow: 0 0 10px rgba(0, 255, 204, 0.25); }
-.badge-status-pending { background: rgba(245, 158, 11, 0.18); color: #f59e0b; }
+.badge-status-pending { background: rgba(245, 158, 11, 0.18); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.35); }
+.badge-status-enrolled { background: rgba(35, 165, 90, 0.2); color: #34d399; border: 1px solid rgba(52, 211, 153, 0.4); }
+.badge-status-not-enrolled { background: rgba(239, 68, 68, 0.16); color: #f87171; border: 1px solid rgba(239, 68, 68, 0.35); }
+.badge-status-expired { background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.25); }
+
+/* Notice Banner */
+.enrollment-notice-banner {
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.18), rgba(0, 255, 204, 0.09));
+  border: 1px solid rgba(0, 255, 204, 0.35);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+}
+.enrollment-notice-banner .banner-icon-col {
+  font-size: 2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+.enrollment-notice-banner .banner-text-col {
+  flex: 1;
+}
+.enrollment-notice-banner .banner-title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: #00ffcc;
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.enrollment-notice-banner .banner-desc {
+  font-size: 0.84rem;
+  color: #cbd5e1;
+  line-height: 1.45;
+}
+.enrollment-notice-banner .banner-desc strong {
+  color: #ffffff;
+}
+.enrollment-notice-banner .banner-action-col {
+  flex-shrink: 0;
+}
 
 .quest-rewards-row {
   display: flex;

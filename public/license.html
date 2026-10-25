@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>License Key Activation | ยืนยันสิทธิ์การใช้งาน</title>
+  <link rel="icon" type="image/x-icon" href="favicon.ico">
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -517,13 +518,8 @@
     
     <!-- 1. Header -->
     <header class="card-header">
-      <div class="logo-badge" aria-hidden="true">
-        <!-- Modern Shield / Key Gradient SVG -->
-        <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-          <path d="M12 8v4"/>
-          <path d="M12 16h.01"/>
-        </svg>
+      <div class="logo-badge" aria-hidden="true" style="padding: 2px; overflow: hidden; border-color: rgba(245, 197, 24, 0.4); box-shadow: 0 0 24px rgba(245, 197, 24, 0.25);">
+        <img src="logo.png" alt="Discord Quest Auto Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
       </div>
       <h1 class="app-title">DISCORD QUEST AUTO</h1>
       <p class="app-subtitle">กรุณาเปิดใช้งาน License Key เพื่อเข้าสู่ระบบ</p>
@@ -568,8 +564,8 @@
             type="text" 
             id="licenseKeyInput" 
             class="key-input" 
-            placeholder="เช่น J3A-XXXX-XXXX-XXXX" 
-            maxlength="29"
+            placeholder="เช่น J3ADQ-XXXX-XXXX-XXXX" 
+            maxlength="36"
             autocomplete="off"
             spellcheck="false"
           >
@@ -634,24 +630,50 @@
       const submitText = document.getElementById('submitText');
       const submitIcon = document.getElementById('submitIcon');
 
+      // Configuration
+      const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwq22hsYcYWJYuOaUkDy1Ysmut80NwQ5kdmQ-0ItJ8JhGjV2w2PRxEua9mi_3yGagh1/exec';
+      const PRODUCT_ID = 'discord_autoquest';
+      const KEY_PREFIX = 'J3ADQ-';
+
       // -------------------------------------------------------------
       // 1. Generate or Retrieve Deterministic Client HWID
       // -------------------------------------------------------------
-      function getOrCreateHWID() {
+      let clientHWID = localStorage.getItem('app_hwid') || 'HWID-INITIALIZING...';
+      hwidDisplay.textContent = clientHWID;
+
+      async function initHWID() {
         let stored = localStorage.getItem('app_hwid');
-        if (!stored) {
-          // Generate a sleek Hardware ID signature format
+        try {
+          const res = await fetch('/api/hwid');
+          if (res.ok) {
+            const data = await res.json();
+            if (data && data.hwid) {
+              stored = data.hwid;
+              localStorage.setItem('app_hwid', stored);
+              clientHWID = stored;
+              hwidDisplay.textContent = clientHWID;
+              return stored;
+            }
+          }
+        } catch (_) {}
+
+        if (!stored || stored === 'HWID-INITIALIZING...') {
           const segments = Array.from({ length: 4 }, () => 
             Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1).toUpperCase()
           );
-          stored = 'HWID-' + segments.join('-');
+          stored = 'J3A-' + segments.join('-');
           localStorage.setItem('app_hwid', stored);
         }
+        clientHWID = stored;
+        hwidDisplay.textContent = clientHWID;
         return stored;
       }
 
-      const clientHWID = getOrCreateHWID();
-      hwidDisplay.textContent = clientHWID;
+      initHWID().then(hwid => {
+        clientHWID = hwid;
+        hwidDisplay.textContent = hwid;
+        checkExistingLicense();
+      });
 
       // -------------------------------------------------------------
       // 2. Copy HWID to Clipboard (With 2s Feedback Animation)
@@ -660,7 +682,6 @@
         try {
           await navigator.clipboard.writeText(clientHWID);
         } catch {
-          // Fallback if navigator.clipboard is unavailable
           const tempInput = document.createElement('input');
           tempInput.value = clientHWID;
           document.body.appendChild(tempInput);
@@ -679,24 +700,12 @@
       });
 
       // -------------------------------------------------------------
-      // 3. License Key Auto-Formatter (Auto-Dash & Uppercase)
+      // 3. License Key Input Listener (Clean Uppercase & Hyphens, No Mangling)
       // -------------------------------------------------------------
       licenseKeyInput.addEventListener('input', (e) => {
         hideError();
         hideSuccess();
-        
-        let value = e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, '');
-        // Auto format in chunks of 4 if desired (e.g. XXXX-XXXX-XXXX-XXXX)
-        // Or keep standard formatted input
-        const parts = [];
-        for (let i = 0; i < value.length; i += 4) {
-          parts.push(value.substring(i, i + 4));
-        }
-        if (parts.length > 0) {
-          e.target.value = parts.join('-').substring(0, 29);
-        } else {
-          e.target.value = '';
-        }
+        e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 36);
       });
 
       licenseKeyInput.addEventListener('keydown', (e) => {
@@ -706,114 +715,167 @@
       });
 
       // -------------------------------------------------------------
-      // 4. Mock Verification API (Easily replaced with real backend)
+      // 4. Google Apps Script License API Engine
       // -------------------------------------------------------------
-      // Sample accepted test keys for demonstration:
-      const MOCK_VALID_KEYS = [
-        'J3A-PRO-2026-ACTIVE',
-        'COOK-45CL-ACKP-ASS1',
-        'VIP8-8888-9999-0000',
-        'DISC-ORDQ-UEST-AUTO'
-      ];
-
-      async function verifyLicenseWithServer(key, hwid) {
-        // SIMULATED NETWORK DELAY (800ms - 1.2s)
-        await new Promise(r => setTimeout(r, 1000));
-
-        /* =========================================================
-           🔌 REAL BACKEND API INTEGRATION POINT:
-           Uncomment and point this to your API server when ready:
-           ---------------------------------------------------------
-           const response = await fetch('https://your-api.com/api/v1/license/verify', {
-             method: 'POST',
-             headers: { 'Content-Type': 'application/json' },
-             body: JSON.stringify({ key, hwid })
-           });
-           return await response.json();
-           ========================================================= */
-
-        // Mock verification rules:
+      async function callLicenseApi(action, key, hwid) {
         const cleanKey = key.trim().toUpperCase();
-        if (MOCK_VALID_KEYS.includes(cleanKey) || cleanKey.startsWith('VIP-') || cleanKey.startsWith('J3A-')) {
-          return {
-            success: true,
-            message: 'License Key ถูกต้องและเปิดใช้งานสำเร็จ!',
-            expiresAt: '2027-12-31',
-            tier: 'Lifetime Access'
-          };
-        } else {
-          return {
-            success: false,
-            message: 'License Key ไม่ถูกต้อง หรือถูกระงับการใช้งานในระบบ'
-          };
+        const cleanHwid = hwid.trim();
+        const params = new URLSearchParams({
+          action: action,
+          key: cleanKey,
+          hwid: cleanHwid,
+          product: PRODUCT_ID
+        });
+
+        const targetUrl = `${APPS_SCRIPT_URL}?${params.toString()}`;
+
+        const response = await fetch(targetUrl, {
+          method: 'GET',
+          redirect: 'follow'
+        });
+
+        if (!response.ok) {
+          throw new Error(`เซิร์ฟเวอร์ตอบกลับรหัสข้อผิดพลาด: HTTP ${response.status}`);
         }
+
+        return await response.json();
       }
 
       // -------------------------------------------------------------
       // 5. Activation Trigger & State Handling
       // -------------------------------------------------------------
       btnActivate.addEventListener('click', async () => {
-        const rawKey = licenseKeyInput.value.trim();
+        const rawKey = licenseKeyInput.value.trim().toUpperCase();
 
         hideError();
         hideSuccess();
 
-        // Validation: Empty check
+        // 5.1 ตรวจสอบความว่างเปล่า
         if (!rawKey) {
           showError('กรุณากรอก License Key ของคุณก่อนกดยืนยัน');
           licenseKeyInput.focus();
           return;
         }
 
-        // Validation: Minimum length check
-        if (rawKey.length < 8) {
+        // 5.2 ตรวจสอบ Prefix ฝั่ง Client (ต้องขึ้นต้นด้วย J3ADQ- เสมอ)
+        if (!rawKey.startsWith(KEY_PREFIX)) {
+          showError('❌ คีย์นี้ไม่ใช่คีย์สำหรับ J3A Discord AutoQuest!');
+          licenseKeyInput.classList.add('input-error');
+          licenseKeyInput.focus();
+          return; // สิ้นสุดทันทีโดยไม่ยิง Request ไปที่เซิร์ฟเวอร์
+        }
+
+        // 5.3 ตรวจสอบความยาวเบื้องต้น
+        if (rawKey.length < 10) {
           showError('รูปแบบ License Key ไม่ถูกต้อง (สั้นเกินไป)');
+          licenseKeyInput.classList.add('input-error');
           licenseKeyInput.focus();
           return;
         }
 
-        // Set Loading UI State
         setLoading(true);
 
         try {
-          const result = await verifyLicenseWithServer(rawKey, clientHWID);
+          const data = await callLicenseApi('activate', rawKey, clientHWID);
 
-          if (result.success) {
-            showSuccess(result.message || 'เปิดใช้งานสำเร็จ! กำลังเข้าสู่ระบบ...');
-            // Save active license in client storage
+          // 5.4 ตรวจสอบ Response JSON จากเซิร์ฟเวอร์
+          if (data && data.success === true) {
+            // สำเร็จ: บันทึกคีย์และเข้าสู่หน้าหลักของโปรแกรม
+            showSuccess(data.message || 'เปิดใช้งานสำเร็จ! กำลังเข้าสู่ระบบ...');
             localStorage.setItem('license_key', rawKey);
             localStorage.setItem('license_verified', 'true');
 
-            // Simulate transition to main app
+            // ซิงค์บันทึกลง license.key บนเครื่องผ่าน server.js
+            try {
+              await fetch('/api/license/activate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ key: rawKey })
+              });
+            } catch (_) {}
+
             setTimeout(() => {
               if (window.opener || window.parent !== window) {
                 window.parent.postMessage({ type: 'LICENSE_ACTIVATED', key: rawKey }, '*');
               } else {
-                // Redirect or open main application dashboard
                 window.location.href = '/';
               }
             }, 1200);
-
           } else {
-            showError(result.message || 'License Key ไม่ถูกต้อง หรือหมดอายุแล้ว');
+            // ไม่สำเร็จ: แสดงข้อความแจ้งเตือนจาก data.message
+            const errorMsg = (data && data.message) ? data.message : 'License Key ไม่ถูกต้อง หรือถูกระงับการใช้งานในระบบ';
+            showError(errorMsg);
             licenseKeyInput.classList.add('input-error');
           }
         } catch (err) {
-          showError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์ กรุณาลองใหม่อีกครั้ง');
+          showError('เกิดข้อผิดพลาดในการเชื่อมต่อเซิร์ฟเวอร์: ' + (err.message || 'กรุณาลองใหม่อีกครั้ง'));
         } finally {
           setLoading(false);
         }
       });
 
       // -------------------------------------------------------------
-      // 6. Close / Exit Button
+      // 6. Check Existing License on Load (action=check)
+      // -------------------------------------------------------------
+      async function checkExistingLicense() {
+        let savedKey = localStorage.getItem('license_key');
+        if (!savedKey) {
+          try {
+            const res = await fetch('/api/license/status');
+            if (res.ok) {
+              const statusData = await res.json();
+              if (statusData && statusData.rawKey) {
+                savedKey = statusData.rawKey;
+                localStorage.setItem('license_key', savedKey);
+                localStorage.setItem('license_verified', 'true');
+              }
+            }
+          } catch (_) {}
+        }
+        if (!savedKey) return;
+
+        licenseKeyInput.value = savedKey;
+        const cleanKey = savedKey.trim().toUpperCase();
+
+        if (cleanKey.startsWith(KEY_PREFIX)) {
+          setLoading(true);
+          submitText.textContent = 'กำลังตรวจสอบสิทธิ์เดิม…';
+
+          callLicenseApi('check', cleanKey, clientHWID)
+            .then((data) => {
+              if (data && data.success === true) {
+                localStorage.setItem('license_verified', 'true');
+                showSuccess(data.message || 'ยืนยันสิทธิ์ถูกต้อง กำลังเข้าสู่หน้าหลัก...');
+                setTimeout(() => {
+                  window.location.href = '/';
+                }, 1000);
+              } else {
+                localStorage.removeItem('license_verified');
+                if (data && data.message) {
+                  showError(data.message);
+                }
+              }
+            })
+            .catch(() => {
+              // กรณีเครือข่ายมีปัญหา ให้ผู้ใช้สามารถกดเปิดใช้งานใหม่ได้
+            })
+            .finally(() => {
+              setLoading(false);
+            });
+        }
+      }
+
+      // -------------------------------------------------------------
+      // 7. Close / Exit Button
       // -------------------------------------------------------------
       btnCloseApp.addEventListener('click', () => {
         if (confirm('คุณต้องการปิดโปรแกรมใช่หรือไม่?')) {
           try {
+            fetch('/api/shutdown', { method: 'POST' }).catch(() => {});
+          } catch {}
+          try {
             window.close();
           } catch {}
-          // For Electron / desktop environment:
           if (window.electronAPI && window.electronAPI.closeApp) {
             window.electronAPI.closeApp();
           } else {

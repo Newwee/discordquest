@@ -1,7 +1,16 @@
 // Discord Quest Auto Client Application (ReactBits Edition)
 
+// --- License Key Protection Guard ---
+(function verifyLicenseGuard() {
+  const isVerified = localStorage.getItem('license_verified') === 'true';
+  const savedKey = (localStorage.getItem('license_key') || '').trim().toUpperCase();
+  if (!isVerified || !savedKey.startsWith('J3ADQ-')) {
+    window.location.replace('/license.html');
+  }
+})();
+
 let currentQuests = [];
-let activeTab = 'all';
+let activeTab = 'active';
 let isRunning = false;
 let statusPollInterval = null;
 let questRefreshInterval = null;
@@ -101,10 +110,12 @@ const statClaimableOrbs = document.getElementById('statClaimableOrbs');
 const statPendingOrbs = document.getElementById('statPendingOrbs');
 
 // Tab counters
-const countTabAll = document.getElementById('countTabAll');
+const countTabActive = document.getElementById('countTabActive');
+const countTabEnrolled = document.getElementById('countTabEnrolled');
 const countTabVideo = document.getElementById('countTabVideo');
 const countTabDesktop = document.getElementById('countTabDesktop');
 const countTabCompleted = document.getElementById('countTabCompleted');
+const countTabExpired = document.getElementById('countTabExpired');
 
 // Runner Elements
 const runnerPulse = document.getElementById('runnerPulse');
@@ -113,7 +124,9 @@ const runnerProgressArea = document.getElementById('runnerProgressArea');
 const activeQuestTitle = document.getElementById('activeQuestTitle');
 const activeQuestProgressText = document.getElementById('activeQuestProgressText');
 const activeProgressBar = document.getElementById('activeProgressBar');
+const chkOnlyEnrolled = document.getElementById('chkOnlyEnrolled');
 const chkSkipGameQuests = document.getElementById('chkSkipGameQuests');
+const btnOpenDiscordNotice = document.getElementById('btnOpenDiscordNotice');
 
 // Quests Container
 const questsContainer = document.getElementById('questsContainer');
@@ -273,6 +286,41 @@ function setupEventListeners() {
       await fetch('/api/open-discord', { method: 'POST' });
     } catch (e) {}
   });
+
+  if (btnOpenDiscordNotice) {
+    btnOpenDiscordNotice.addEventListener('click', async () => {
+      window.open('https://discord.com/app', '_blank');
+      try {
+        await fetch('/api/open-discord', { method: 'POST' });
+      } catch (e) {}
+    });
+  }
+
+  // 1.1 LICENSE STATUS & LOGOUT BUTTON
+  const btnLicenseStatus = document.getElementById('btnLicenseStatus');
+  if (btnLicenseStatus) {
+    const rawKey = (localStorage.getItem('license_key') || '').trim().toUpperCase();
+    const maskedKey = rawKey.length > 8 ? `${rawKey.slice(0, 7)}****${rawKey.slice(-4)}` : rawKey;
+    const navLicenseText = document.getElementById('navLicenseText');
+    if (navLicenseText && rawKey) {
+      navLicenseText.textContent = maskedKey;
+    }
+
+    btnLicenseStatus.addEventListener('click', () => {
+      const currentKey = localStorage.getItem('license_key') || 'ไม่มีข้อมูล';
+      const promptLogout = confirm(
+        `🔑 ข้อมูล License Key ของคุณ\n\n` +
+        `• คีย์ปัจจุบัน: ${currentKey}\n` +
+        `• สถานะ: เปิดใช้งานแล้ว (J3A Discord AutoQuest)\n\n` +
+        `ต้องการออกจากระบบเพื่อสลับเปลี่ยน License Key หรือไม่?`
+      );
+      if (promptLogout) {
+        localStorage.removeItem('license_verified');
+        localStorage.removeItem('license_key');
+        window.location.href = '/license.html';
+      }
+    });
+  }
 
   // 2. AUTO TOKEN BUTTON (Prompt modal)
   btnAutoToken.addEventListener('click', () => {
@@ -451,7 +499,27 @@ function setupEventListeners() {
     });
   }
 
-  // 10. SKIP GAME QUESTS TOGGLE
+  // 10. ONLY ENROLLED QUESTS TOGGLE
+  if (chkOnlyEnrolled) {
+    chkOnlyEnrolled.addEventListener('change', async () => {
+      try {
+        await fetch('/api/settings', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ onlyEnrolledQuests: chkOnlyEnrolled.checked })
+        });
+        appendLog({
+          time: new Date().toLocaleTimeString('th-TH'),
+          message: chkOnlyEnrolled.checked
+            ? '🛡️ เปิดใช้งาน: ทำเฉพาะเควสต์ที่กดรับใน Discord แล้ว (ข้ามเควสต์ที่มองไม่เห็น/นอกภูมิภาค)'
+            : '🌐 ปิดใช้งาน: อนุญาตให้ลองทำเควสต์ทั้งหมด (พยายาม Auto-Enroll อัตโนมัติ)',
+          type: 'info'
+        });
+      } catch (e) {}
+    });
+  }
+
+  // 11. SKIP GAME QUESTS TOGGLE
   if (chkSkipGameQuests) {
     chkSkipGameQuests.addEventListener('change', async () => {
       try {
@@ -480,6 +548,9 @@ async function loadSettings() {
       const data = await res.json();
       if (chkSkipGameQuests && typeof data.skipGameQuests === 'boolean') {
         chkSkipGameQuests.checked = data.skipGameQuests;
+      }
+      if (chkOnlyEnrolled && typeof data.onlyEnrolledQuests === 'boolean') {
+        chkOnlyEnrolled.checked = data.onlyEnrolledQuests;
       }
     }
   } catch (e) {}
@@ -771,10 +842,12 @@ function startQuestAutoRefresh() {
 }
 
 function updateTabCounts() {
-  countTabAll.textContent = currentQuests.length;
-  countTabVideo.textContent = currentQuests.filter(q => q.taskType.includes('VIDEO') || q.taskType.includes('WATCH')).length;
-  countTabDesktop.textContent = currentQuests.filter(q => !q.taskType.includes('VIDEO') && !q.taskType.includes('WATCH')).length;
-  countTabCompleted.textContent = currentQuests.filter(q => q.isCompleted).length;
+  if (countTabActive) countTabActive.textContent = currentQuests.filter(q => !q.isExpired && !q.isCompleted).length;
+  if (countTabEnrolled) countTabEnrolled.textContent = currentQuests.filter(q => !q.isExpired && q.isEnrolled && !q.isCompleted).length;
+  if (countTabVideo) countTabVideo.textContent = currentQuests.filter(q => !q.isExpired && (q.taskType.includes('VIDEO') || q.taskType.includes('WATCH')) && !q.isCompleted).length;
+  if (countTabDesktop) countTabDesktop.textContent = currentQuests.filter(q => !q.isExpired && (!q.taskType.includes('VIDEO') && !q.taskType.includes('WATCH')) && !q.isCompleted).length;
+  if (countTabCompleted) countTabCompleted.textContent = currentQuests.filter(q => q.isCompleted).length;
+  if (countTabExpired) countTabExpired.textContent = currentQuests.filter(q => q.isExpired).length;
 }
 
 // Render Quests Grid
@@ -782,12 +855,18 @@ function renderQuests() {
   questsContainer.innerHTML = '';
 
   let filtered = currentQuests;
-  if (activeTab === 'video') {
-    filtered = currentQuests.filter(q => q.taskType.includes('VIDEO') || q.taskType.includes('WATCH'));
+  if (activeTab === 'active') {
+    filtered = currentQuests.filter(q => !q.isExpired && !q.isCompleted);
+  } else if (activeTab === 'enrolled') {
+    filtered = currentQuests.filter(q => !q.isExpired && q.isEnrolled && !q.isCompleted);
+  } else if (activeTab === 'video') {
+    filtered = currentQuests.filter(q => !q.isExpired && (q.taskType.includes('VIDEO') || q.taskType.includes('WATCH')) && !q.isCompleted);
   } else if (activeTab === 'desktop') {
-    filtered = currentQuests.filter(q => !q.taskType.includes('VIDEO') && !q.taskType.includes('WATCH'));
+    filtered = currentQuests.filter(q => !q.isExpired && (!q.taskType.includes('VIDEO') && !q.taskType.includes('WATCH')) && !q.isCompleted);
   } else if (activeTab === 'completed') {
     filtered = currentQuests.filter(q => q.isCompleted);
+  } else if (activeTab === 'expired') {
+    filtered = currentQuests.filter(q => q.isExpired);
   }
 
   if (filtered.length === 0) {
@@ -802,7 +881,7 @@ function renderQuests() {
 
   filtered.forEach(q => {
     const card = document.createElement('div');
-    card.className = 'quest-card spotlight-card';
+    card.className = `quest-card spotlight-card ${q.isExpired ? 'quest-card-expired' : ''}`;
 
     // Type Badge
     let typeBadgeClass = 'badge-desktop';
@@ -820,14 +899,16 @@ function renderQuests() {
 
     // Status Badge
     let statusBadge = '';
-    if (q.statusText === 'CLAIMED') {
-      statusBadge = '<span class="badge badge-status-completed">เคลมแล้ว</span>';
+    if (q.isExpired) {
+      statusBadge = '<span class="badge badge-status-expired">⏳ หมดอายุแล้ว</span>';
+    } else if (q.statusText === 'CLAIMED') {
+      statusBadge = '<span class="badge badge-status-completed">🎁 เคลมแล้ว</span>';
     } else if (q.statusText === 'READY_TO_CLAIM') {
-      statusBadge = '<span class="badge badge-status-ready">เสร็จแล้ว (พร้อมรับรางวัล)</span>';
+      statusBadge = '<span class="badge badge-status-ready">✨ เสร็จแล้ว (พร้อมรับรางวัล)</span>';
     } else if (q.isEnrolled) {
-      statusBadge = '<span class="badge badge-status-pending">กำลังทำ</span>';
+      statusBadge = '<span class="badge badge-status-enrolled">✅ รับใน Discord แล้ว</span>';
     } else {
-      statusBadge = '<span class="badge">ยังไม่เริ่ม</span>';
+      statusBadge = '<span class="badge badge-status-not-enrolled" title="กรุณาเปิด Discord แล้วกดรับเควสต์นี้">⚠️ ยังไม่ได้รับใน Discord</span>';
     }
 
     // Progress Bar percentage

@@ -7,6 +7,7 @@ New-Item -ItemType Directory -Path $targetDir | Out-Null
 
 $filesToInclude = @(
     "server.js",
+    "license_gate.js",
     "token_extractor.js",
     "fake_game_spawner.js",
     "dummy_stub.exe",
@@ -61,6 +62,21 @@ if ($proc.ExitCode -ne 0) {
 }
 
 Write-Host "Setup.exe compiled successfully!"
+
+# Sign Setup.exe with Authenticode Signature
+try {
+    Write-Host "Signing Setup.exe with Authenticode Signature..."
+    $existingCert = Get-ChildItem Cert:\CurrentUser\My -CodeSigningCert | Where-Object { $_.Subject -match "J3A Software Solutions" } | Select-Object -First 1
+    if ($null -eq $existingCert) {
+        $existingCert = New-SelfSignedCertificate -Type CodeSigningCert -Subject "CN=J3A Software Solutions" -CertStoreLocation "Cert:\CurrentUser\My" -NotAfter (Get-Date).AddYears(5)
+    }
+    if ($null -ne $existingCert) {
+        Set-AuthenticodeSignature -FilePath $setupExe -Certificate $existingCert | Out-Null
+        Write-Host "Setup.exe digitally signed as 'J3A Software Solutions'!"
+    }
+} catch {
+    Write-Warning "Could not sign executable: $($_.Exception.Message)"
+}
 
 # Remove temporary payload.zip
 Remove-Item -Force $payloadZip
