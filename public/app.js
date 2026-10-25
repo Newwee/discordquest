@@ -566,24 +566,167 @@ function setupEventListeners() {
     });
   }
 
-  if (headerLicenseBadge) {
-    headerLicenseBadge.addEventListener('click', () => {
-      const keyStr = activeLicenseInfo?.key || activeLicenseInfo?.license?.key || localStorage.getItem('license_key') || 'ไม่มีข้อมูล';
-      const tierStr = activeLicenseInfo?.tierName || activeLicenseInfo?.license?.tierName || 'Standard';
-      const remDays = activeLicenseInfo?.remainingDays ?? activeLicenseInfo?.license?.remainingDays ?? '--';
-      const hwidStr = activeLicenseInfo?.hwid || 'N/A';
+  // 1.2 J3A STORE LICENSE INFO PANEL (Custom Modal)
+  const licenseInfoModal = document.getElementById('licenseInfoModal');
+  const btnCloseLicenseInfo = document.getElementById('btnCloseLicenseInfo');
+  const btnDoneLicenseInfo = document.getElementById('btnDoneLicenseInfo');
+  const infoLicenseStatus = document.getElementById('infoLicenseStatus');
+  const infoLicenseTier = document.getElementById('infoLicenseTier');
+  const infoLicenseRemaining = document.getElementById('infoLicenseRemaining');
+  const infoLicenseExpires = document.getElementById('infoLicenseExpires');
+  const infoLicenseKey = document.getElementById('infoLicenseKey');
+  const btnCopyLicenseKey = document.getElementById('btnCopyLicenseKey');
+  const copyKeyIcon = document.getElementById('copyKeyIcon');
+  const btnToggleKeyMask = document.getElementById('btnToggleKeyMask');
+  const keyMaskIcon = document.getElementById('keyMaskIcon');
+  const keyMaskText = document.getElementById('keyMaskText');
+  const infoLicenseHwid = document.getElementById('infoLicenseHwid');
+  const btnCopyInfoHwid = document.getElementById('btnCopyInfoHwid');
+  const copyHwidIcon = document.getElementById('copyHwidIcon');
+  const btnSwitchLicenseKey = document.getElementById('btnSwitchLicenseKey');
 
-      const promptLogout = confirm(
-        `🔑 ข้อมูลสิทธิ์ License Key (J3A Store Verified)\n\n` +
-        `• คีย์: ${keyStr}\n` +
-        `• แพ็กเกจ: ${tierStr}\n` +
-        `• คงเหลือ: ${remDays} วัน\n` +
-        `• HWID: ${hwidStr.slice(0, 16)}...\n` +
-        `• สั่งซื้อ/ต่ออายุ: https://j3astore.com\n\n` +
-        `ต้องการออกจากระบบเพื่อสลับเปลี่ยน License Key หรือไม่?`
-      );
-      if (promptLogout) {
-        fetch('/api/license/logout', { method: 'POST' }).catch(() => {});
+  let isKeyMasked = true;
+
+  function openLicenseInfoPanel() {
+    if (!licenseInfoModal) return;
+
+    const fullKey = activeLicenseInfo?.fullKey || localStorage.getItem('license_key') || '';
+    const maskedKey = activeLicenseInfo?.key || (fullKey ? (fullKey.length > 10 ? fullKey.slice(0, 8) + '-****-' + fullKey.slice(-4) : fullKey) : 'ไม่มีข้อมูล');
+    const tierStr = activeLicenseInfo?.tierName || 'Standard';
+    const remDays = activeLicenseInfo?.remainingDays;
+    const hwidStr = activeLicenseInfo?.hwid || modalHwidText?.textContent || 'N/A';
+    const expiresAt = activeLicenseInfo?.expiresAt;
+
+    // Status
+    if (infoLicenseStatus) {
+      if (activeLicenseInfo?.activated) {
+        infoLicenseStatus.className = 'stat-card-val text-green';
+        infoLicenseStatus.textContent = '🟢 ใช้งานได้ปกติ';
+      } else {
+        infoLicenseStatus.className = 'stat-card-val text-yellow';
+        infoLicenseStatus.textContent = '🟡 ยังไม่เปิดใช้งาน';
+      }
+    }
+
+    // Tier
+    if (infoLicenseTier) {
+      infoLicenseTier.textContent = tierStr;
+    }
+
+    // Remaining
+    if (infoLicenseRemaining) {
+      if (typeof remDays === 'number') {
+        infoLicenseRemaining.textContent = `${remDays} วัน`;
+      } else {
+        infoLicenseRemaining.textContent = '--';
+      }
+    }
+
+    // Expiration date
+    if (infoLicenseExpires) {
+      if (expiresAt) {
+        try {
+          const d = new Date(expiresAt);
+          infoLicenseExpires.textContent = d.toLocaleDateString('th-TH', { year: 'numeric', month: 'short', day: 'numeric' });
+        } catch (_) {
+          infoLicenseExpires.textContent = String(expiresAt).slice(0, 10);
+        }
+      } else {
+        infoLicenseExpires.textContent = '--';
+      }
+    }
+
+    // Key display
+    isKeyMasked = true;
+    if (keyMaskIcon) keyMaskIcon.textContent = '👁️';
+    if (keyMaskText) keyMaskText.textContent = 'แสดงคีย์';
+    if (infoLicenseKey) {
+      infoLicenseKey.textContent = maskedKey;
+    }
+
+    // HWID
+    if (infoLicenseHwid) {
+      infoLicenseHwid.textContent = hwidStr;
+    }
+
+    licenseInfoModal.classList.remove('hidden');
+  }
+
+  function closeLicenseInfoPanel() {
+    if (licenseInfoModal) licenseInfoModal.classList.add('hidden');
+  }
+
+  if (headerLicenseBadge) {
+    headerLicenseBadge.addEventListener('click', openLicenseInfoPanel);
+  }
+  if (btnCloseLicenseInfo) {
+    btnCloseLicenseInfo.addEventListener('click', closeLicenseInfoPanel);
+  }
+  if (btnDoneLicenseInfo) {
+    btnDoneLicenseInfo.addEventListener('click', closeLicenseInfoPanel);
+  }
+
+  // Toggle Mask/Unmask Key
+  if (btnToggleKeyMask) {
+    btnToggleKeyMask.addEventListener('click', () => {
+      isKeyMasked = !isKeyMasked;
+      const fullKey = activeLicenseInfo?.fullKey || localStorage.getItem('license_key') || 'ไม่มีข้อมูล';
+      const maskedKey = activeLicenseInfo?.key || (fullKey.length > 10 ? fullKey.slice(0, 8) + '-****-' + fullKey.slice(-4) : fullKey);
+
+      if (isKeyMasked) {
+        if (infoLicenseKey) infoLicenseKey.textContent = maskedKey;
+        if (keyMaskIcon) keyMaskIcon.textContent = '👁️';
+        if (keyMaskText) keyMaskText.textContent = 'แสดงคีย์';
+      } else {
+        if (infoLicenseKey) infoLicenseKey.textContent = fullKey;
+        if (keyMaskIcon) keyMaskIcon.textContent = '🔒';
+        if (keyMaskText) keyMaskText.textContent = 'ซ่อนคีย์';
+      }
+    });
+  }
+
+  // Copy Key
+  if (btnCopyLicenseKey) {
+    btnCopyLicenseKey.addEventListener('click', async () => {
+      const keyToCopy = activeLicenseInfo?.fullKey || localStorage.getItem('license_key') || '';
+      if (!keyToCopy) return;
+      try {
+        await navigator.clipboard.writeText(keyToCopy);
+        if (copyKeyIcon) copyKeyIcon.textContent = '✅';
+        btnCopyLicenseKey.style.borderColor = '#00ffcc';
+        setTimeout(() => {
+          if (copyKeyIcon) copyKeyIcon.textContent = '📋';
+          btnCopyLicenseKey.style.borderColor = '';
+        }, 1500);
+      } catch (_) {}
+    });
+  }
+
+  // Copy HWID
+  if (btnCopyInfoHwid) {
+    btnCopyInfoHwid.addEventListener('click', async () => {
+      const hwidToCopy = infoLicenseHwid?.textContent || activeLicenseInfo?.hwid || '';
+      if (!hwidToCopy) return;
+      try {
+        await navigator.clipboard.writeText(hwidToCopy);
+        if (copyHwidIcon) copyHwidIcon.textContent = '✅';
+        btnCopyInfoHwid.style.borderColor = '#00ffcc';
+        setTimeout(() => {
+          if (copyHwidIcon) copyHwidIcon.textContent = '📋';
+          btnCopyInfoHwid.style.borderColor = '';
+        }, 1500);
+      } catch (_) {}
+    });
+  }
+
+  // Switch Key Button inside Panel
+  if (btnSwitchLicenseKey) {
+    btnSwitchLicenseKey.addEventListener('click', async () => {
+      if (confirm('ยืนยันออกจากระบบเพื่อสลับเปลี่ยน License Key?')) {
+        closeLicenseInfoPanel();
+        try {
+          await fetch('/api/license/logout', { method: 'POST' });
+        } catch (_) {}
         localStorage.removeItem('license_verified');
         localStorage.removeItem('license_key');
         if (licenseActivationModal) licenseActivationModal.classList.remove('hidden');

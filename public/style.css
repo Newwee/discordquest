@@ -1973,6 +1973,110 @@ body {
 }
 
 /* =========================================================
+   J3A LICENSE INFO MODAL & PANEL
+   ========================================================= */
+.license-info-modal-card {
+  max-width: 500px;
+}
+
+.license-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.license-info-stat-card {
+  background: rgba(10, 14, 24, 0.75);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.stat-card-label {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-card-val {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.btn-modal-close {
+  background: transparent;
+  border: none;
+  color: var(--text-muted);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+  line-height: 1;
+}
+
+.btn-modal-close:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.btn-link-action {
+  background: transparent;
+  border: none;
+  color: #00ffcc;
+  font-size: 0.75rem;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.btn-link-action:hover {
+  background: rgba(0, 255, 204, 0.1);
+}
+
+.license-store-action-banner {
+  background: linear-gradient(135deg, rgba(0, 255, 204, 0.08), rgba(88, 101, 242, 0.12));
+  border: 1px solid rgba(0, 255, 204, 0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.store-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.store-banner-text strong {
+  font-size: 0.82rem;
+  color: #ffffff;
+}
+
+.store-banner-text span {
+  font-size: 0.74rem;
+  color: var(--text-muted);
+}
+
+.btn-switch-key:hover {
+  border-color: #ef4444;
+  color: #ef4444;
+  background: rgba(239, 68, 68, 0.12);
+}
+
+/* =========================================================
    67-HOUR URGENT JOKE COUNTDOWN BANNER & EMERGENCY RED SIREN
    ========================================================= */
 .screen-strobe-overlay {

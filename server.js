@@ -1178,6 +1178,7 @@ const server = http.createServer(async (req, res) => {
       activated: isLicenseActive,
       hwid: hwid,
       key: (currentLicenseData?.key || cached?.key) ? maskKey(currentLicenseData?.key || cached?.key) : '',
+      fullKey: currentLicenseData?.key || cached?.key || '',
       tier: currentLicenseData?.tier || cached?.tier || '',
       tierName: currentLicenseData?.tierName || cached?.tierName || '',
       remainingDays: currentLicenseData?.remainingDays ?? cached?.remainingDays,
