@@ -12,8 +12,8 @@ using System.Diagnostics;
 [assembly: AssemblyProduct("J3A Discord AutoQuest")]
 [assembly: AssemblyCopyright("Copyright © 2026 J3A Software Solutions")]
 [assembly: AssemblyTrademark("J3A")]
-[assembly: AssemblyVersion("2.6.0.0")]
-[assembly: AssemblyFileVersion("2.6.0.0")]
+[assembly: AssemblyVersion("2.7.0.0")]
+[assembly: AssemblyFileVersion("2.7.0.0")]
 
 namespace DiscordQuestAutoInstaller
 {
@@ -67,7 +67,7 @@ namespace DiscordQuestAutoInstaller
 
             Label lblTitle = new Label
             {
-                Text = "Discord Quest Auto v2.6 Setup",
+                Text = "Discord Quest Auto v2.7 Setup",
                 ForeColor = Color.FromArgb(0, 255, 204),
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Location = new Point(16, 12),
@@ -402,12 +402,37 @@ namespace DiscordQuestAutoInstaller
                 }
                 else
                 {
+                    string fileName = Path.GetFileName(completeFileName).ToLowerInvariant();
+                    // Preserves user config and license so existing accounts/keys are never erased
+                    if (File.Exists(completeFileName))
+                    {
+                        if (fileName == "config.json" || fileName == "license.key")
+                        {
+                            continue;
+                        }
+                    }
+
                     string directoryPath = Path.GetDirectoryName(completeFileName);
                     if (!string.IsNullOrEmpty(directoryPath))
                     {
                         Directory.CreateDirectory(directoryPath);
                     }
-                    entry.ExtractToFile(completeFileName, true);
+
+                    int retries = 5;
+                    while (retries > 0)
+                    {
+                        try
+                        {
+                            entry.ExtractToFile(completeFileName, true);
+                            break;
+                        }
+                        catch (IOException)
+                        {
+                            retries--;
+                            if (retries == 0) throw;
+                            System.Threading.Thread.Sleep(200);
+                        }
+                    }
                 }
             }
         }
@@ -570,7 +595,7 @@ namespace DiscordQuestAutoInstaller
 
             Label lblSub = new Label
             {
-                Text = "ระบบกำลังติดตั้งเวอร์ชันล่าสุด v2.6.0 และจะเปิดโปรแกรมกลับขึ้นมาให้อัตโนมัติ...",
+                Text = "ระบบกำลังติดตั้งเวอร์ชันล่าสุด v2.7.0 และจะเปิดโปรแกรมกลับขึ้นมาให้อัตโนมัติ...",
                 ForeColor = Color.FromArgb(160, 165, 185),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
                 Location = new Point(19, 36),
@@ -632,7 +657,7 @@ namespace DiscordQuestAutoInstaller
                     {
                         foreach (Process p in Process.GetProcessesByName("node"))
                         {
-                            try { p.Kill(); } catch { }
+                            try { p.Kill(); p.WaitForExit(2000); } catch { }
                         }
                     }
                     catch { }
@@ -641,11 +666,12 @@ namespace DiscordQuestAutoInstaller
                 {
                     progressBar.Value = 55;
                     lblPercent.Text = "55%";
-                    lblStatus.Text = "กำลังแตกไฟล์แพ็กเกจเวอร์ชัน v2.6.0 และติดตั้งข้อมูลใหม่...";
+                    lblStatus.Text = "กำลังแตกไฟล์แพ็กเกจเวอร์ชัน v2.7.0 และติดตั้งข้อมูลใหม่...";
                     try
                     {
                         Directory.CreateDirectory(targetDir);
                         Assembly asm = Assembly.GetExecutingAssembly();
+                        bool extracted = false;
                         using (Stream stream = asm.GetManifestResourceStream("payload.zip"))
                         {
                             if (stream != null)
@@ -653,6 +679,28 @@ namespace DiscordQuestAutoInstaller
                                 using (ZipArchive archive = new ZipArchive(stream))
                                 {
                                     ExtractZipEntries(archive, targetDir);
+                                    extracted = true;
+                                }
+                            }
+                        }
+                        if (!extracted)
+                        {
+                            string baseDir = AppDomain.CurrentDomain.BaseDirectory;
+                            string[] fallbackZips = new string[] {
+                                Path.Combine(baseDir, "payload.zip"),
+                                Path.Combine(baseDir, "setup_update.zip"),
+                                Path.Combine(baseDir, "DiscordQuestAuto_Update.zip")
+                            };
+                            foreach (string fz in fallbackZips)
+                            {
+                                if (File.Exists(fz))
+                                {
+                                    using (ZipArchive archive = ZipFile.OpenRead(fz))
+                                    {
+                                        ExtractZipEntries(archive, targetDir);
+                                        extracted = true;
+                                        break;
+                                    }
                                 }
                             }
                         }
@@ -671,7 +719,7 @@ namespace DiscordQuestAutoInstaller
                     {
                         // Write just_updated.json
                         string marker = Path.Combine(targetDir, "just_updated.json");
-                        File.WriteAllText(marker, "{\"justUpdated\":true,\"version\":\"2.6.0\",\"date\":\"" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\"}");
+                        File.WriteAllText(marker, "{\"justUpdated\":true,\"version\":\"2.7.0\",\"date\":\"" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\"}");
 
                         // Register shortcut
                         string ps1 = Path.Combine(targetDir, "install_shortcut.ps1");
@@ -748,12 +796,37 @@ namespace DiscordQuestAutoInstaller
                 }
                 else
                 {
+                    string fileName = Path.GetFileName(completeFileName).ToLowerInvariant();
+                    // Preserves user config and license so existing accounts/keys are never erased
+                    if (File.Exists(completeFileName))
+                    {
+                        if (fileName == "config.json" || fileName == "license.key")
+                        {
+                            continue;
+                        }
+                    }
+
                     string directoryPath = Path.GetDirectoryName(completeFileName);
                     if (!string.IsNullOrEmpty(directoryPath))
                     {
                         Directory.CreateDirectory(directoryPath);
                     }
-                    entry.ExtractToFile(completeFileName, true);
+
+                    int retries = 5;
+                    while (retries > 0)
+                    {
+                        try
+                        {
+                            entry.ExtractToFile(completeFileName, true);
+                            break;
+                        }
+                        catch (IOException)
+                        {
+                            retries--;
+                            if (retries == 0) throw;
+                            System.Threading.Thread.Sleep(200);
+                        }
+                    }
                 }
             }
         }

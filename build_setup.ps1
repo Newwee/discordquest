@@ -98,6 +98,13 @@ try {
     Write-Warning "Could not sign executable: $($_.Exception.Message)"
 }
 
+# Create DiscordQuestAuto_Update.zip for direct in-place updates (เหมือน DiscordProfile)
+Write-Host "Creating DiscordQuestAuto_Update.zip for direct in-place self-updater..."
+$updateZip = Join-Path $PSScriptRoot "DiscordQuestAuto_Update.zip"
+if (Test-Path $updateZip) { Remove-Item -Force $updateZip }
+Copy-Item $payloadZip -Destination $updateZip
+Write-Host "DiscordQuestAuto_Update.zip created!"
+
 # Remove temporary payload.zip
 Remove-Item -Force $payloadZip
 
@@ -116,4 +123,4 @@ Copy-Item (Join-Path $PSScriptRoot "README.txt") -Destination $zipDir
 [System.IO.Compression.ZipFile]::CreateFromDirectory($zipDir, $distZip)
 Remove-Item -Recurse -Force $zipDir
 
-Write-Host "Build complete! DiscordQuestAuto_Setup.zip is ready."
+Write-Host "Build complete! DiscordQuestAuto_Setup.zip and DiscordQuestAuto_Update.zip are ready."

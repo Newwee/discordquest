@@ -102,7 +102,28 @@ function isDiscordDesktopRunning() {
   }
 }
 
+const ROBLOX_APP_ID = "363445589247131668";
+const ROBLOX_EXE = "RobloxPlayerBeta.exe";
+
+function isRobloxQuest(quest) {
+  if (!quest) return false;
+  const qStr = (
+    (quest.name || '') + ' ' +
+    (quest.gameTitle || '') + ' ' +
+    (quest.config?.messages?.game_title || '') + ' ' +
+    (quest.config?.messages?.quest_name || '') + ' ' +
+    (quest.config?.application?.name || '') + ' ' +
+    JSON.stringify(quest.config || {})
+  ).toLowerCase();
+  return qStr.includes('roblox');
+}
+
 async function findExecutableForQuest(quest) {
+  // If quest is related to Roblox (e.g. Scary Shawarma Kiosk, Blox Fruits, etc.), always use RobloxPlayerBeta.exe
+  if (isRobloxQuest(quest)) {
+    return ROBLOX_EXE;
+  }
+
   const appId = quest.config?.task_config_v2?.tasks?.PLAY_ON_DESKTOP?.applications?.[0]?.id 
              || quest.config?.application?.id 
              || quest.applicationId;
@@ -167,11 +188,62 @@ function killFakeGame(gameInfo) {
   } catch {}
 }
 
+let currentFakeRoblox = null;
+
+function isProcessRunning(pid) {
+  if (!pid) return false;
+  try {
+    const out = execSync(`tasklist /FI "PID eq ${pid}" /NH`, { encoding: 'utf8' });
+    return out.includes(String(pid));
+  } catch {
+    return false;
+  }
+}
+
+function startFakeRoblox() {
+  if (currentFakeRoblox && isProcessRunning(currentFakeRoblox.pid)) {
+    return currentFakeRoblox;
+  }
+  try {
+    execSync('taskkill /F /IM "RobloxPlayerBeta.exe"', { stdio: 'ignore' });
+  } catch (_) {}
+
+  currentFakeRoblox = spawnFakeGame(ROBLOX_EXE, "Roblox");
+  return currentFakeRoblox;
+}
+
+function stopFakeRoblox() {
+  if (currentFakeRoblox) {
+    killFakeGame(currentFakeRoblox);
+    currentFakeRoblox = null;
+  }
+  try {
+    execSync('taskkill /F /IM "RobloxPlayerBeta.exe"', { stdio: 'ignore' });
+  } catch (_) {}
+  return true;
+}
+
+function getFakeRobloxStatus() {
+  const isRunning = currentFakeRoblox ? isProcessRunning(currentFakeRoblox.pid) : false;
+  return {
+    running: isRunning,
+    pid: isRunning ? currentFakeRoblox.pid : null,
+    exe: ROBLOX_EXE,
+    appId: ROBLOX_APP_ID
+  };
+}
+
 module.exports = {
+  ROBLOX_APP_ID,
+  ROBLOX_EXE,
+  isRobloxQuest,
   ensureDummyStub,
   loadDetectableApps,
   isDiscordDesktopRunning,
   findExecutableForQuest,
   spawnFakeGame,
-  killFakeGame
+  killFakeGame,
+  startFakeRoblox,
+  stopFakeRoblox,
+  getFakeRobloxStatus
 };

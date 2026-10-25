@@ -3,7 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const os = require('node:os');
 const crypto = require('node:crypto');
-const { exec } = require('node:child_process');
+const { exec, spawn } = require('node:child_process');
 const {
   PRIMARY_API_URL,
   FALLBACK_API_URL,
@@ -24,7 +24,12 @@ const {
   isDiscordDesktopRunning,
   findExecutableForQuest,
   spawnFakeGame,
-  killFakeGame
+  killFakeGame,
+  startFakeRoblox,
+  stopFakeRoblox,
+  getFakeRobloxStatus,
+  isRobloxQuest,
+  ROBLOX_APP_ID
 } = require('./fake_game_spawner');
 
 let isLicenseActive = false;
@@ -820,19 +825,28 @@ async function runAutoQuests(token) {
             }
           }
         }
-      } else if (q.taskType === 'PLAY_ON_DESKTOP') {
-        const appId = q.applicationId || q.rawConfig?.task_config_v2?.tasks?.PLAY_ON_DESKTOP?.applications?.[0]?.id || q.rawConfig?.application?.id;
+      } else if (q.taskType === 'PLAY_ON_DESKTOP' || isRobloxQuest(q)) {
+        const isRoblox = isRobloxQuest(q);
+        let appId = q.applicationId || q.rawConfig?.task_config_v2?.tasks?.PLAY_ON_DESKTOP?.applications?.[0]?.id || q.rawConfig?.application?.id;
+        if (isRoblox && (!appId || appId === 'UNKNOWN')) {
+          appId = ROBLOX_APP_ID;
+        }
         const target = q.targetSeconds || 900;
         let secDone = q.currentSeconds || 0;
 
-        log(`🎮 รันเควสต์เล่นเกม: "${q.name}" (App ID: ${appId}) | เป้าหมาย: ${target}s (${Math.ceil(target / 60)} นาที)...`, 'info');
+        if (isRoblox) {
+          log(`🎮 [Roblox Quest Engine] ตรวจพบเควสต์ในเครือ Roblox: "${q.name}" | เป้าหมาย: ${target}s (${Math.ceil(target / 60)} นาที)...`, 'info');
+        } else {
+          log(`🎮 รันเควสต์เล่นเกม: "${q.name}" (App ID: ${appId}) | เป้าหมาย: ${target}s (${Math.ceil(target / 60)} นาที)...`, 'info');
+        }
 
         // Optional background process simulation
-        let exeName = 'game.exe';
+        let exeName = isRoblox ? 'RobloxPlayerBeta.exe' : 'game.exe';
         try {
           exeName = await findExecutableForQuest(q);
-          activeFakeGame = spawnFakeGame(exeName, q.gameTitle || q.name);
-          log(`🚀 จำลองโปรเซส [${exeName}] (PID: ${activeFakeGame.pid}) เรียบร้อย (กิน CPU/RAM 0%)`, 'info');
+          const gameTitle = isRoblox ? 'Roblox' : (q.gameTitle || q.name);
+          activeFakeGame = spawnFakeGame(exeName, gameTitle);
+          log(`🚀 จำลองโปรเซส [${exeName}] (PID: ${activeFakeGame.pid}) เรียบร้อย • Discord จะตรวจจับเป็น Playing Roblox ทันที (กิน CPU/RAM 0%)`, 'info');
         } catch (e) {}
 
         log(`⚡ เริ่มระบบ Direct Heartbeat Engine ยิงตรงสู่เซิร์ฟเวอร์ Discord ทุก 20 วินาที...`, 'info');
@@ -964,7 +978,11 @@ const server = http.createServer(async (req, res) => {
     '/api/check-update',
     '/api/download-latest',
     '/api/auto-update',
+    '/api/version/update',
     '/api/just-updated',
+    '/api/fake-roblox/status',
+    '/api/fake-roblox/start',
+    '/api/fake-roblox/stop',
     '/api/shutdown'
   ];
   if (pathname.startsWith('/api/') && !publicApiRoutes.includes(pathname)) {
@@ -1298,14 +1316,31 @@ const server = http.createServer(async (req, res) => {
     return res.end();
   }
 
-  // 4.7 1-Click In-App Auto-Update & Patcher
-  if (pathname === '/api/auto-update' && req.method === 'POST') {
+  // 4.7 1-Click In-App Auto-Update & Patcher (รองรับทั้ง /api/auto-update และ /api/version/update)
+  if ((pathname === '/api/auto-update' || pathname === '/api/version/update') && req.method === 'POST') {
     log('⚡ เริ่มกระบวนการ Auto-Update: กำลังดาวน์โหลดเวอร์ชันล่าสุด...', 'info');
     try {
-      const zipUrl = 'https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip';
-      const fetchRes = await fetch(zipUrl);
-      if (!fetchRes.ok) {
-        throw new Error(`ดาวน์โหลดล้มเหลว (HTTP ${fetchRes.status})`);
+      const localInfo = getLocalVersionInfo();
+      // Try downloadUrl from version.json or raw GitHub
+      const downloadUrls = [
+        localInfo.downloadUrl,
+        'https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip',
+        'https://github.com/Newwee/discordquest/releases/latest/download/DiscordQuestAuto_Setup.zip'
+      ].filter(Boolean);
+
+      let fetchRes = null;
+      for (const u of downloadUrls) {
+        try {
+          const resTest = await fetch(u, { headers: { 'User-Agent': 'DiscordQuestAuto-Updater/2.7' } });
+          if (resTest.ok) {
+            fetchRes = resTest;
+            break;
+          }
+        } catch (_) {}
+      }
+
+      if (!fetchRes || !fetchRes.ok) {
+        throw new Error('ไม่สามารถดาวน์โหลดแพ็กเกจอัปเดตจากเซิร์ฟเวอร์ได้');
       }
 
       const tempDir = path.join(process.env.TEMP || os.tmpdir(), 'DiscordQuestAuto_Update');
@@ -1318,37 +1353,89 @@ const server = http.createServer(async (req, res) => {
       const arrayBuf = await fetchRes.arrayBuffer();
       fs.writeFileSync(zipPath, Buffer.from(arrayBuf));
 
-      log('📦 ดาวน์โหลดเสร็จเรียบร้อย กำลังแตกไฟล์และติดตั้งอัปเดตแบบเงียบ...', 'info');
+      log('📦 ดาวน์โหลดเสร็จสมบูรณ์ กำลังเริ่มสคริปต์อัปเดตระบบในตัว...', 'ok');
 
-      // Extract Setup.exe via PowerShell and run with GUI /update progress
-      const extractScript = `
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$zip = "${zipPath.replace(/\\/g, '\\\\')}"
-$dest = "${tempDir.replace(/\\/g, '\\\\')}"
-[System.IO.Compression.ZipFile]::ExtractToDirectory($zip, $dest)
-$setup = Join-Path $dest "Setup.exe"
-if (Test-Path $setup) {
-  Start-Process $setup -ArgumentList "/update", "/dir=\`"${__dirname.replace(/\\/g, '\\\\')}\`""
-}
+      // Create robust self-updating batch script that handles process termination, extraction, and auto-restart
+      const batPath = path.join(tempDir, 'j3a_self_update.bat');
+      const appDir = __dirname;
+      const batContent = `@echo off
+chcp 65001 >nul
+timeout /t 1 /nobreak >nul
+taskkill /F /IM node.exe >nul 2>&1
+timeout /t 1 /nobreak >nul
+
+powershell -NoProfile -ExecutionPolicy Bypass -Command "& {
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    $zip = '${zipPath.replace(/\\/g, '\\\\')}'
+    $dest = '${tempDir.replace(/\\/g, '\\\\')}'
+    $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+    foreach ($entry in $archive.Entries) {
+        if ([string]::IsNullOrEmpty($entry.Name)) { continue }
+        $target = [System.IO.Path]::Combine($dest, $entry.FullName)
+        $parent = [System.IO.Path]::GetDirectoryName($target)
+        if (-not (Test-Path $parent)) { [System.IO.Directory]::CreateDirectory($parent) | Out-Null }
+        [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)
+    }
+    $archive.Dispose()
+}"
+
+if exist "${tempDir.replace(/\\/g, '\\\\')}\\Setup.exe" (
+    start "" "${tempDir.replace(/\\/g, '\\\\')}\\Setup.exe" /update "/dir=${appDir.replace(/\\/g, '\\\\')}"
+) else (
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "& {
+        Add-Type -AssemblyName System.IO.Compression.FileSystem
+        $zip = '${zipPath.replace(/\\/g, '\\\\')}'
+        $dest = '${appDir.replace(/\\/g, '\\\\')}'
+        $archive = [System.IO.Compression.ZipFile]::OpenRead($zip)
+        foreach ($entry in $archive.Entries) {
+            if ([string]::IsNullOrEmpty($entry.Name)) { continue }
+            $target = [System.IO.Path]::Combine($dest, $entry.FullName)
+            $parent = [System.IO.Path]::GetDirectoryName($target)
+            if (-not (Test-Path $parent)) { [System.IO.Directory]::CreateDirectory($parent) | Out-Null }
+            $leaf = [System.IO.Path]::GetFileName($target).ToLower()
+            if ($leaf -eq 'config.json' -or $leaf -eq 'license.key') {
+                if (Test-Path $target) { continue }
+            }
+            [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $target, $true)
+        }
+        $archive.Dispose()
+    }"
+    powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-Content -Path '${appDir.replace(/\\/g, '\\\\')}\\just_updated.json' -Value '{\\"justUpdated\\":true,\\"version\\":\\"2.7.0\\",\\"date\\":\\"' + (Get-Date -Format 'yyyy-MM-dd HH:mm:ss') + '\\"}' -Encoding UTF8"
+    if exist "${appDir.replace(/\\/g, '\\\\')}\\launch.vbs" (
+        start "" "${appDir.replace(/\\/g, '\\\\')}\\launch.vbs"
+    ) else if exist "${appDir.replace(/\\/g, '\\\\')}\\start.bat" (
+        start "" "${appDir.replace(/\\/g, '\\\\')}\\start.bat"
+    )
+)
 `;
-      const scriptPath = path.join(tempDir, 'do_update.ps1');
-      fs.writeFileSync(scriptPath, extractScript, 'utf8');
+      fs.writeFileSync(batPath, batContent, 'utf8');
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, message: 'กำลังเปิดหน้าต่างอัปเดตระบบและปิดโปรแกรมเดิม...' }));
+      res.end(JSON.stringify({
+        success: true,
+        ok: true,
+        message: 'กำลังเปิดหน้าต่าง Process Update และรีสตาร์ทโปรแกรมอัตโนมัติ...'
+      }));
 
-      // Run updater script detached and terminate current process so files can be replaced
+      // Launch batch detached and exit current process
       setTimeout(() => {
-        exec(`powershell -ExecutionPolicy Bypass -File "${scriptPath}"`);
+        try {
+          const child = spawn('cmd.exe', ['/c', batPath], {
+            detached: true,
+            stdio: 'ignore',
+            windowsHide: false
+          });
+          child.unref();
+        } catch (_) {}
         setTimeout(() => {
           process.exit(0);
-        }, 800);
+        }, 500);
       }, 400);
       return;
     } catch (updateErr) {
       log(`❌ อัปเดตอัตโนมัติไม่สำเร็จ: ${updateErr.message}`, 'error');
       res.writeHead(500, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ success: false, error: updateErr.message }));
+      return res.end(JSON.stringify({ success: false, ok: false, error: updateErr.message }));
     }
   }
 
@@ -1371,6 +1458,26 @@ if (Test-Path $setup) {
     }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ justUpdated: false }));
+  }
+
+  // 4.9 Fake Play Roblox Controls (เปิด/ปิด จำลองเล่น Roblox แยกอิสระ)
+  if (pathname === '/api/fake-roblox/status' && req.method === 'GET') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify(getFakeRobloxStatus()));
+  }
+
+  if (pathname === '/api/fake-roblox/start' && req.method === 'POST') {
+    const roblox = startFakeRoblox();
+    log(`🎮 [Roblox Engine] เปิดระบบ Fake Play Roblox เรียบร้อย (PID: ${roblox.pid}) • Discord ตรวจจับสถานะเป็น "Playing Roblox" (0% CPU/RAM)`, 'success');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ success: true, ...getFakeRobloxStatus() }));
+  }
+
+  if (pathname === '/api/fake-roblox/stop' && req.method === 'POST') {
+    stopFakeRoblox();
+    log(`⏹️ [Roblox Engine] ปิดระบบ Fake Play Roblox เรียบร้อย`, 'warn');
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ success: true, ...getFakeRobloxStatus() }));
   }
 
   // 5. Fetch Quests & Calculations (Cached & Rate-Limit Shielded)

@@ -2118,19 +2118,52 @@ body {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 10px 16px;
-  gap: 12px;
+  padding: 12px 18px;
+  gap: 16px;
   flex-wrap: wrap;
+}
+
+.top-siren-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 1;
+}
+
+.top-siren-headline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 0.95rem;
+  font-weight: 800;
+  color: #ffffff;
+  flex-wrap: wrap;
+}
+
+.top-siren-subtext {
+  font-size: 0.8rem;
+  color: #cbd5e1;
+  margin-top: 3px;
+}
+
+.top-siren-subtext b {
+  color: #fde047;
+}
+
+.top-siren-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
 .top-siren-badge {
   background: #ff003b;
   color: #fff;
-  font-size: 0.75rem;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 1px;
-  padding: 3px 8px;
-  border-radius: 4px;
+  padding: 2px 8px;
+  border-radius: 99px;
   box-shadow: 0 0 10px rgba(255, 0, 59, 0.8);
   animation: badgePulse 0.5s infinite alternate;
 }
@@ -2140,34 +2173,47 @@ body {
   100% { transform: scale(1.05); filter: brightness(1.3); }
 }
 
-.top-siren-msg {
-  flex: 1;
-  font-size: 0.88rem;
-  color: #fecaca;
-  font-weight: 600;
-}
-
-.top-siren-msg b {
-  color: #ffffff;
-  text-shadow: 0 0 8px rgba(255, 0, 59, 0.8);
-}
-
 .btn-top-banner-update {
-  background: linear-gradient(135deg, #ff003b, #b91c1c);
+  background: linear-gradient(135deg, #f59e0b, #ea580c, #ef4444);
   color: #fff;
-  border: 1px solid #ff4d6d;
-  font-weight: 700;
+  border: 1px solid #fde047;
+  font-weight: 800;
   font-size: 0.84rem;
-  padding: 6px 16px;
+  padding: 8px 18px;
   border-radius: var(--radius-sm);
   cursor: pointer;
-  box-shadow: 0 0 15px rgba(255, 0, 59, 0.6);
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
   transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .btn-top-banner-update:hover {
   transform: translateY(-1px) scale(1.03);
-  box-shadow: 0 0 25px rgba(255, 0, 59, 0.9);
+  box-shadow: 0 0 25px rgba(245, 158, 11, 0.9);
+  filter: brightness(1.1);
+}
+
+.btn-top-banner-details {
+  background: rgba(30, 41, 59, 0.85);
+  color: #e2e8f0;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  font-weight: 700;
+  font-size: 0.82rem;
+  padding: 8px 14px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.btn-top-banner-details:hover {
+  background: rgba(51, 65, 85, 0.95);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.5);
 }
 
 /* HAZARD STRIPES */
@@ -2473,4 +2519,134 @@ body {
   color: #a7f3d0;
   font-size: 0.82rem;
   line-height: 1.45;
+}
+
+/* =========================================================
+   FAKE PLAY ROBLOX BANNER & CONTROLS
+   ========================================================= */
+.fake-roblox-banner {
+  margin: 14px 0 6px 0;
+  background: linear-gradient(135deg, rgba(88, 101, 242, 0.12), rgba(0, 255, 204, 0.08));
+  border: 1px solid rgba(88, 101, 242, 0.3);
+  border-radius: var(--radius-md);
+  padding: 12px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  transition: all 0.25s ease;
+}
+
+.fake-roblox-banner.running {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.18), rgba(0, 255, 204, 0.12));
+  border-color: #10b981;
+  box-shadow: 0 0 20px rgba(16, 185, 129, 0.25);
+}
+
+.roblox-banner-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+  min-width: 260px;
+}
+
+.roblox-icon-box {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: rgba(88, 101, 242, 0.18);
+  border: 1px solid rgba(88, 101, 242, 0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.fake-roblox-banner.running .roblox-icon-box {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: #10b981;
+}
+
+.roblox-text-box {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.roblox-header-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.roblox-title {
+  font-size: 0.92rem;
+  font-weight: 700;
+  color: #ffffff;
+}
+
+.badge-roblox-status {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+}
+
+.badge-roblox-status.idle {
+  background: rgba(100, 116, 139, 0.2);
+  color: #94a3b8;
+  border: 1px solid rgba(100, 116, 139, 0.3);
+}
+
+.badge-roblox-status.active {
+  background: rgba(16, 185, 129, 0.2);
+  color: #34d399;
+  border: 1px solid #10b981;
+  box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+  animation: badgePulse 0.8s infinite alternate;
+}
+
+.roblox-subtext {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.4;
+  margin: 0;
+}
+
+.roblox-subtext b {
+  color: #00ffcc;
+}
+
+.btn-roblox-action {
+  background: linear-gradient(135deg, #5865F2, #4752C4);
+  border: 1px solid #7983f5;
+  color: #ffffff;
+  font-weight: 700;
+  font-size: 0.84rem;
+  padding: 8px 18px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-roblox-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 15px rgba(88, 101, 242, 0.5);
+}
+
+.btn-roblox-action.running {
+  background: linear-gradient(135deg, #ef4444, #b91c1c);
+  border-color: #f87171;
+  box-shadow: 0 0 15px rgba(239, 68, 68, 0.4);
+}
+
+.btn-roblox-action.running:hover {
+  box-shadow: 0 0 20px rgba(239, 68, 68, 0.6);
 }

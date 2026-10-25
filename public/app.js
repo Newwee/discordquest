@@ -48,7 +48,6 @@ const btnCheckUpdate = document.getElementById('btnCheckUpdate');
 const updateBadge = document.getElementById('updateBadge');
 const btnCheckUpdateAgain = document.getElementById('btnCheckUpdateAgain');
 const btnAutoUpdate = document.getElementById('btnAutoUpdate');
-const btnDownloadUpdate = document.getElementById('btnDownloadUpdate');
 const btnCloseUpdateModal = document.getElementById('btnCloseUpdateModal');
 const currentVersionTag = document.getElementById('currentVersionTag');
 const latestVersionTag = document.getElementById('latestVersionTag');
@@ -56,12 +55,16 @@ const updateStatusBanner = document.getElementById('updateStatusBanner');
 const updateStatusText = document.getElementById('updateStatusText');
 const changelogList = document.getElementById('changelogList');
 let latestReleaseUrl = '/api/download-latest';
+let isUpdatingApp = false;
 
 // Emergency Red Alert & Strobe Elements
 const screenStrobeOverlay = document.getElementById('screenStrobeOverlay');
 const emergencyTopSirenBanner = document.getElementById('emergencyTopSirenBanner');
 const topBannerVersion = document.getElementById('topBannerVersion');
+const topBannerCurrentVersion = document.getElementById('topBannerCurrentVersion');
 const btnTopBannerUpdate = document.getElementById('btnTopBannerUpdate');
+const btnTopBannerDetails = document.getElementById('btnTopBannerDetails');
+const btnUrgentAutoUpdate = document.getElementById('btnUrgentAutoUpdate');
 const updateModalCard = document.getElementById('updateModalCard');
 const updateHazardBar = document.getElementById('updateHazardBar');
 const policeStrobeBar = document.getElementById('policeStrobeBar');
@@ -216,6 +219,11 @@ const activeQuestProgressText = document.getElementById('activeQuestProgressText
 const activeProgressBar = document.getElementById('activeProgressBar');
 const chkOnlyEnrolled = document.getElementById('chkOnlyEnrolled');
 const chkSkipGameQuests = document.getElementById('chkSkipGameQuests');
+const chkAutoFakeRoblox = document.getElementById('chkAutoFakeRoblox');
+const fakeRobloxStatusBadge = document.getElementById('fakeRobloxStatusBadge');
+const btnToggleFakeRoblox = document.getElementById('btnToggleFakeRoblox');
+const fakeRobloxBtnIcon = document.getElementById('fakeRobloxBtnIcon');
+const fakeRobloxBtnText = document.getElementById('fakeRobloxBtnText');
 const btnOpenDiscordNotice = document.getElementById('btnOpenDiscordNotice');
 
 // Quests Container
@@ -264,6 +272,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Check for updates silently in the background
   checkForUpdates(false);
+
+  // Sync Fake Roblox status
+  syncFakeRobloxStatus();
 
   // Check if first-time user guide should be shown
   const hasSeenGuide = localStorage.getItem('discord_quest_guide_seen');
@@ -891,72 +902,103 @@ function setupEventListeners() {
     btnCloseGuide.addEventListener('click', closeGuideModal);
   }
 
-  // 8. UPDATE CHECKER MODAL
+  // 8. UPDATE CHECKER & IN-PLACE SELF-UPDATE ENGINE (เหมือน DiscordProfile)
   if (btnCheckUpdate) {
     btnCheckUpdate.addEventListener('click', () => checkForUpdates(true));
   }
   if (btnCheckUpdateAgain) {
     btnCheckUpdateAgain.addEventListener('click', () => checkForUpdates(true));
   }
-  if (btnDownloadUpdate) {
-    btnDownloadUpdate.addEventListener('click', () => {
-      if (latestReleaseUrl) window.open(latestReleaseUrl, '_blank');
-    });
-  }
-  if (btnAutoUpdate) {
-    btnAutoUpdate.addEventListener('click', async () => {
-      if (!confirm('ยืนยันเริ่มการอัปเดตระบบอัตโนมัติ? (โปรแกรมจะดาวน์โหลดไฟล์และรีสตาร์ทตัวมันเองอัตโนมัติในไม่กี่วินาที)')) {
-        return;
-      }
+
+  async function executeAutoUpdate() {
+    if (isUpdatingApp) return;
+    if (!confirm('ยืนยันเริ่มการอัปเดตระบบอัตโนมัติ?\n\nโปรแกรมจะทำการอัปเดตข้อมูลในตัว (In-Place Update) และรีสตาร์ทกลับมาเปิดให้อัตโนมัติในไม่กี่วินาที ไม่จำเป็นต้องดาวน์โหลดไฟล์ใหม่เอง')) {
+      return;
+    }
+
+    isUpdatingApp = true;
+    if (btnAutoUpdate) {
       btnAutoUpdate.disabled = true;
-      if (btnDownloadUpdate) btnDownloadUpdate.classList.add('hidden');
-      updateStatusBanner.className = 'update-status-banner info';
-      updateStatusText.innerHTML = '<span class="sync-dot"></span> กำลังดาวน์โหลดและติดตั้งเวอร์ชันล่าสุด... กรุณารอสักครู่';
+      btnAutoUpdate.innerHTML = '<span class="sync-dot"></span> กำลังอัปเดตและรีสตาร์ท...';
+    }
+    if (btnTopBannerUpdate) {
+      btnTopBannerUpdate.disabled = true;
+      btnTopBannerUpdate.innerHTML = '<span class="sync-dot"></span> กำลังอัปเดตและรีสตาร์ท...';
+    }
+    if (btnUrgentAutoUpdate) {
+      btnUrgentAutoUpdate.disabled = true;
+      btnUrgentAutoUpdate.innerHTML = '<span class="sync-dot"></span> กำลังอัปเดต...';
+    }
 
-      try {
-        const res = await fetch('/api/auto-update', { method: 'POST' });
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'ดาวน์โหลดไม่สำเร็จ');
+    if (updateStatusBanner) updateStatusBanner.className = 'update-status-banner info';
+    if (updateStatusText) updateStatusText.innerHTML = '<span class="sync-dot"></span> กำลังดาวน์โหลดแพ็กเกจเวอร์ชันล่าสุด... กรุณารอสักครู่';
 
-        updateStatusBanner.className = 'update-status-banner success';
-        updateStatusText.innerHTML = '🚀 กำลังเปิดหน้าต่าง Process Update และปิดโปรแกรมเดิม... กรุณารอสักครู่';
-
-        // Close update modal & strobe after 1.2s as Setup.exe /update takes over
-        setTimeout(() => {
-          if (updateModal) updateModal.classList.add('hidden');
-          if (screenStrobeOverlay) screenStrobeOverlay.classList.add('hidden');
-          stopEmergencySiren();
-          showLoader('ระบบกำลังอัปเดต...', 'โปรแกรมเดิมถูกปิดแล้ว หน้าต่าง Process Update กำลังทำงาน');
-        }, 1200);
-
-        let retries = 0;
-        const poll = setInterval(async () => {
-          retries++;
-          try {
-            const ver = await fetch('/api/version');
-            if (ver.ok) {
-              clearInterval(poll);
-              location.reload();
-            }
-          } catch (e) {
-            if (retries > 45) {
-              clearInterval(poll);
-              location.reload();
-            }
-          }
-        }, 1500);
-      } catch (err) {
-        updateStatusBanner.className = 'update-status-banner error';
-        updateStatusText.textContent = `❌ อัปเดตไม่สำเร็จ: ${err.message}`;
-        btnAutoUpdate.disabled = false;
-        if (btnDownloadUpdate) btnDownloadUpdate.classList.remove('hidden');
+    try {
+      const res = await fetch('/api/auto-update', { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || (!data.success && !data.ok)) {
+        throw new Error(data.error || 'ดาวน์โหลดไม่สำเร็จ');
       }
-    });
+
+      if (updateStatusBanner) updateStatusBanner.className = 'update-status-banner success';
+      if (updateStatusText) updateStatusText.innerHTML = '🚀 กำลังเปิดหน้าต่าง Process Update และรีสตาร์ทโปรแกรมอัตโนมัติ...';
+
+      // Hide modal & siren after short delay as updater takes over
+      setTimeout(() => {
+        if (updateModal) updateModal.classList.add('hidden');
+        if (screenStrobeOverlay) screenStrobeOverlay.classList.add('hidden');
+        stopEmergencySiren();
+        showLoader('ระบบกำลังอัปเดต...', 'หน้าต่าง Process Update กำลังทำงาน โปรแกรมจะรีสตาร์ทกลับขึ้นมาให้อัตโนมัติ');
+      }, 800);
+
+      let retries = 0;
+      const poll = setInterval(async () => {
+        retries++;
+        try {
+          const ver = await fetch('/api/version');
+          if (ver.ok) {
+            clearInterval(poll);
+            location.reload();
+          }
+        } catch (e) {
+          if (retries > 60) {
+            clearInterval(poll);
+            location.reload();
+          }
+        }
+      }, 1500);
+    } catch (err) {
+      if (updateStatusBanner) updateStatusBanner.className = 'update-status-banner error';
+      if (updateStatusText) updateStatusText.textContent = `❌ อัปเดตไม่สำเร็จ: ${err.message}`;
+      if (btnAutoUpdate) {
+        btnAutoUpdate.disabled = false;
+        btnAutoUpdate.innerHTML = '<svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg> ⚡ อัปเดตอัตโนมัติทันที';
+      }
+      if (btnTopBannerUpdate) {
+        btnTopBannerUpdate.disabled = false;
+        btnTopBannerUpdate.innerHTML = '⚡ อัปเดตทันที';
+      }
+      if (btnUrgentAutoUpdate) {
+        btnUrgentAutoUpdate.disabled = false;
+        btnUrgentAutoUpdate.innerHTML = '⚡ อัปเดตอัตโนมัติทันที';
+      }
+      isUpdatingApp = false;
+    }
+  }
+
+  if (btnAutoUpdate) {
+    btnAutoUpdate.addEventListener('click', executeAutoUpdate);
   }
   if (btnTopBannerUpdate) {
-    btnTopBannerUpdate.addEventListener('click', () => {
+    btnTopBannerUpdate.addEventListener('click', executeAutoUpdate);
+  }
+  if (btnTopBannerDetails) {
+    btnTopBannerDetails.addEventListener('click', () => {
       checkForUpdates(true);
     });
+  }
+  if (btnUrgentAutoUpdate) {
+    btnUrgentAutoUpdate.addEventListener('click', executeAutoUpdate);
   }
   if (btnToggleSirenSound) {
     btnToggleSirenSound.addEventListener('click', toggleSirenMute);
@@ -1018,6 +1060,53 @@ function setupEventListeners() {
       } catch (e) {}
     });
   }
+  // 12. FAKE PLAY ROBLOX TOGGLE
+  if (btnToggleFakeRoblox) {
+    btnToggleFakeRoblox.addEventListener('click', async () => {
+      btnToggleFakeRoblox.disabled = true;
+      try {
+        const isRunning = btnToggleFakeRoblox.classList.contains('running');
+        const endpoint = isRunning ? '/api/fake-roblox/stop' : '/api/fake-roblox/start';
+        const res = await fetch(endpoint, { method: 'POST' });
+        const data = await res.json();
+        await syncFakeRobloxStatus();
+      } catch (err) {
+        alert('เกิดข้อผิดพลาดในการสลับ Fake Roblox: ' + err.message);
+      } finally {
+        btnToggleFakeRoblox.disabled = false;
+      }
+    });
+  }
+}
+
+// Sync Fake Roblox Process Status
+async function syncFakeRobloxStatus() {
+  try {
+    const res = await fetch('/api/fake-roblox/status');
+    if (!res.ok) return;
+    const data = await res.json();
+    const banner = document.querySelector('.fake-roblox-banner');
+
+    if (data.running) {
+      if (fakeRobloxStatusBadge) {
+        fakeRobloxStatusBadge.className = 'badge-roblox-status active';
+        fakeRobloxStatusBadge.textContent = '🟢 กำลังจำลอง Roblox (Playing Roblox)';
+      }
+      if (fakeRobloxBtnIcon) fakeRobloxBtnIcon.textContent = '⏹️';
+      if (fakeRobloxBtnText) fakeRobloxBtnText.textContent = 'ปิด Fake Roblox';
+      if (btnToggleFakeRoblox) btnToggleFakeRoblox.className = 'btn btn-roblox-action running';
+      if (banner) banner.classList.add('running');
+    } else {
+      if (fakeRobloxStatusBadge) {
+        fakeRobloxStatusBadge.className = 'badge-roblox-status idle';
+        fakeRobloxStatusBadge.textContent = '⚫ ปิดอยู่';
+      }
+      if (fakeRobloxBtnIcon) fakeRobloxBtnIcon.textContent = '▶️';
+      if (fakeRobloxBtnText) fakeRobloxBtnText.textContent = 'เปิด Fake Roblox';
+      if (btnToggleFakeRoblox) btnToggleFakeRoblox.className = 'btn btn-roblox-action';
+      if (banner) banner.classList.remove('running');
+    }
+  } catch (_) {}
 }
 
 // Load backend settings
@@ -1073,6 +1162,8 @@ async function checkForUpdates(openModalOnResult = false) {
     currentVersionTag.textContent = `v${data.currentVersion}`;
     latestVersionTag.textContent = `v${data.latestVersion}`;
     if (topBannerVersion) topBannerVersion.textContent = `v${data.latestVersion}`;
+    if (topBannerCurrentVersion) topBannerCurrentVersion.textContent = `v${data.currentVersion}`;
+    if (btnTopBannerUpdate) btnTopBannerUpdate.innerHTML = `⚡ อัปเดตเป็น v${data.latestVersion} ทันที`;
     latestReleaseUrl = data.downloadUrl || data.releaseUrl || '/api/download-latest';
 
     // Populate Changelog
@@ -1101,9 +1192,8 @@ async function checkForUpdates(openModalOnResult = false) {
 
       // 3. Update Status text with flashing warning
       updateStatusBanner.className = 'update-status-banner has-update';
-      updateStatusText.innerHTML = `🚨 <b>[ฉุกเฉินไฟกระพริบแดง]</b> ตรวจพบเวอร์ชันใหม่ <b>v${data.latestVersion}</b> บังคับอัปเดตด่วน!`;
+      updateStatusText.innerHTML = `🚨 <b>[ฉุกเฉินไฟกระพริบแดง]</b> ตรวจพบเวอร์ชันใหม่ <b>v${data.latestVersion}</b> บังคับอัปเดตด่วน! (อัปเดตในตัว ไม่ต้องโหลดไฟล์ใหม่)`;
       if (btnAutoUpdate) btnAutoUpdate.classList.remove('hidden');
-      if (btnDownloadUpdate) btnDownloadUpdate.classList.remove('hidden');
 
       // 4. Trigger 67-Hour Joke Countdown Banner
       if (urgentUpdateBanner) {
@@ -1135,7 +1225,6 @@ async function checkForUpdates(openModalOnResult = false) {
       updateStatusBanner.className = 'update-status-banner success';
       updateStatusText.textContent = '✨ คุณกำลังใช้งานเวอร์ชันล่าสุดแล้ว ไม่จำเป็นต้องอัปเดต';
       if (btnAutoUpdate) btnAutoUpdate.classList.add('hidden');
-      if (btnDownloadUpdate) btnDownloadUpdate.classList.add('hidden');
     }
   } catch (err) {
     console.warn('Update check failed:', err);
@@ -1480,7 +1569,14 @@ function renderQuests() {
     // Type Badge
     let typeBadgeClass = 'badge-desktop';
     let typeLabel = q.taskType;
-    if (q.taskType.includes('VIDEO') || q.taskType.includes('WATCH')) {
+    const isRoblox = (q.name || '').toLowerCase().includes('roblox') 
+                  || (q.gameTitle || '').toLowerCase().includes('roblox')
+                  || ((q.name || '').toLowerCase().includes('shawarma'));
+
+    if (isRoblox) {
+      typeBadgeClass = 'badge-desktop';
+      typeLabel = '🎮 Roblox (Fake Auto)';
+    } else if (q.taskType.includes('VIDEO') || q.taskType.includes('WATCH')) {
       typeBadgeClass = 'badge-video';
       typeLabel = '🎬 ดูคลิป (Auto)';
     } else if (q.taskType.includes('STREAM')) {
@@ -1553,6 +1649,7 @@ function renderQuests() {
 }
 
 // Runner Status Polling
+let robloxPollCounter = 0;
 function startStatusPolling() {
   statusPollInterval = setInterval(async () => {
     try {
@@ -1560,6 +1657,10 @@ function startStatusPolling() {
       if (res.ok) {
         const state = await res.json();
         updateRunnerUI(state);
+      }
+      robloxPollCounter++;
+      if (robloxPollCounter % 4 === 0) {
+        syncFakeRobloxStatus();
       }
     } catch (e) {}
   }, 1000);

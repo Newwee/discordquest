@@ -1,20 +1,18 @@
 {
-  "version": "2.6.0",
+  "version": "2.7.0",
   "name": "Discord Quest Auto",
   "releaseDate": "2026-10-25",
   "githubRepo": "https://github.com/Newwee/discordquest",
   "downloadUrl": "https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip",
-  "urgentNotice": "🚨🚨🚨 [CRITICAL RED ALERT] ไฟกระพริบแดงฉุกเฉิน! บังคับอัปเดตเป็น v2.6.0 ภายใน 67 ชม.",
+  "urgentNotice": "🎮 [อัปเดตใหม่ v2.7.0] รองรับ Fake Play Roblox ผ่านเควสต์ 700 Orbs และหน้าต่างจัดการ License Panel",
   "deadlineHours": 67,
   "releaseNotes": [
-    "🚨🚨🚨 [CRITICAL RED ALERT - ไฟกระพริบแดงฉุกเฉินระดับสูงสุด] 🚨🚨🚨",
-    "🔴🔴🔴 [นับถอยหลัง 67 ชั่วโมง] บังคับอัปเดตเป็นเวอร์ชันใหม่ v2.6.0 ด่วนที่สุด! 🔴🔴🔴",
-    "⚠️⛔ [ยกเลิกคีย์ถาวร 100%] ทางร้าน J3A Store ได้ยกเลิกคีย์ถาวรและเปลี่ยนมาใช้ระบบ HWID Lock",
-    "🛑 [คำเตือนขั้นเด็ดขาด] คีย์ถาวรเดิมจะถูกตัดสิทธิ์ถาวร หากไม่อัปเดตโปรแกรมจะไม่สามารถใช้งานได้",
-    "*(Joke Meme: ตัวเลขนับถอยหลัง 67 ชม. เป็นกิมมิคขำๆ แต่เรื่องยกเลิกคีย์ถาวรและต้องอัปเดตคือเรื่องจริงนะสัส!)*",
-    "🔒 Next-Gen License Engine: ตรวจสอบสิทธิ์ผ่าน API https://j3astore.com และผูกสิทธิ์ 1:1 กับเครื่อง",
-    "🚫 Anti-Abuse Trial: ป้องกันการวนใช้คีย์ทดลอง 3 วันซ้ำบนเครื่องเดิมอย่างเด็ดขาด",
-    "⏱️ Heartbeat Checker: ตรวจสอบสถานะคีย์เบื้องหลังทุก 30 นาที พร้อม Encrypted Local Storage",
-    "⚡⚡⚡ [กดปุ่ม '⚡ อัปเดตอัตโนมัติทันที' หรือดาวน์โหลดไฟล์ .zip เพื่ออัปเกรดเดี๋ยวนี้!] ⚡⚡⚡"
+    "⚡ [1-Click In-Place Auto Updater] อัปเดตโปรแกรมอัตโนมัติในตัวคลิกเดียวแบบ DiscordProfile ไม่ต้องไปดาวน์โหลดไฟล์ใหม่เอง",
+    "🎮 [Fake Play Roblox Engine] จำลองการเปิดเล่นเกม Roblox (RobloxPlayerBeta.exe) เพื่อทำเควสต์ในเครือ Roblox 700 Orbs (เช่น Scary Shawarma Kiosk) อัตโนมัติ โดยไม่ต้องโหลดเกมจริง",
+    "🕹️ [Roblox Standalone Controls] เพิ่มปุ่มสวิตช์เปิด/ปิด Fake Play Roblox แยกอิสระบนแดชบอร์ด (0% CPU/RAM)",
+    "🎨 [Dark Glassmorphism License Panel] หน้าต่าง Panel จัดการสิทธิ์สุดหรู คัดลอกคีย์/HWID และสลับคีย์ได้ทันที",
+    "🚀 [GUI Update Wizard & Auto-Restart] หน้าต่าง Process Update พร้อม Progress Bar และรีสตาร์ทกลับมาเปิดอัตโนมัติ",
+    "🔒 [Next-Gen License & HWID Lock] รองรับระบบ License ร้าน J3A Store (j3astore.com) และผูกสิทธิ์ 1:1 ป้องกันคีย์หลุด",
+    "⚡⚡⚡ [กดปุ่ม '⚡ อัปเดตอัตโนมัติทันที' เพื่ออัปเกรดเป็น v2.7.0 ในคลิกเดียวทันที!] ⚡⚡⚡"
   ]
 }

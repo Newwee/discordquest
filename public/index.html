@@ -28,11 +28,22 @@
     <div id="emergencyTopSirenBanner" class="emergency-top-siren-banner hidden">
       <div class="hazard-stripe-strip"></div>
       <div class="top-siren-inner">
-        <span class="siren-beacon beacon-fast">🚨</span>
-        <span class="top-siren-badge">CRITICAL RED ALERT</span>
-        <span class="top-siren-msg">ตรวจพบเวอร์ชันใหม่ <b id="topBannerVersion">v2.6.0</b>! ยกเลิกคีย์ถาวรแล้ว บังคับอัปเดตภายใน 67 ชม.</span>
-        <button id="btnTopBannerUpdate" class="btn-top-banner-update">⚡ อัปเดตทันที</button>
-        <span class="siren-beacon beacon-fast">🚨</span>
+        <div class="top-siren-left">
+          <span class="siren-beacon beacon-fast">🚀</span>
+          <div>
+            <div class="top-siren-headline">
+              <span>แจ้งเตือนอัปเดตใหม่! พบเวอร์ชัน <b id="topBannerVersion">v2.7.0</b> พร้อมให้ติดตั้งแล้ว</span>
+              <span class="top-siren-badge">UPDATE AVAILABLE</span>
+            </div>
+            <div class="top-siren-subtext">
+              เวอร์ชันปัจจุบันของคุณคือ <b id="topBannerCurrentVersion">v2.4.1</b> — อัปเดตอัตโนมัติในตัว (In-Place Update) ไม่ต้องดาวน์โหลดไฟล์ใหม่
+            </div>
+          </div>
+        </div>
+        <div class="top-siren-actions">
+          <button id="btnTopBannerUpdate" class="btn-top-banner-update">⚡ อัปเดตทันที</button>
+          <button id="btnTopBannerDetails" class="btn-top-banner-details">📋 ดูรายละเอียด</button>
+        </div>
       </div>
       <div class="hazard-stripe-strip"></div>
     </div>
@@ -225,6 +236,10 @@
               <input type="checkbox" id="chkSkipGameQuests" checked>
               <span>ข้ามเควสต์เล่นเกม (ปิดเพื่อเปิด Fake Game เล่นเกมอัตโนมัติ 🎮)</span>
             </label>
+            <label class="checkbox-label roblox-auto-toggle" title="จำลองการเปิดเล่น Roblox (RobloxPlayerBeta.exe) อัตโนมัติเมื่อพบเควสต์ในเครือ Roblox (เช่น Scary Shawarma Kiosk 700 Orbs)">
+              <input type="checkbox" id="chkAutoFakeRoblox" checked>
+              <span>Auto Fake Roblox (เควสต์ 700 Orbs 🕹️)</span>
+            </label>
             <button id="btnStartAuto" class="btn btn-success btn-glow">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
               เริ่มทำเควสต์อัตโนมัติ
@@ -232,6 +247,30 @@
             <button id="btnStopAuto" class="btn btn-danger hidden">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><rect x="6" y="6" width="12" height="12"/></svg>
               หยุดชั่วคราว
+            </button>
+          </div>
+        </div>
+
+        <!-- Standalone Fake Play Roblox Helper Banner -->
+        <div class="fake-roblox-banner">
+          <div class="roblox-banner-left">
+            <div class="roblox-icon-box">
+              <span class="roblox-badge-icon">🎮</span>
+            </div>
+            <div class="roblox-text-box">
+              <div class="roblox-header-row">
+                <span class="roblox-title">Fake Play Roblox Engine</span>
+                <span id="fakeRobloxStatusBadge" class="badge-roblox-status idle">⚫ ปิดอยู่</span>
+              </div>
+              <p class="roblox-subtext">
+                จำลองโปรเซส <b>RobloxPlayerBeta.exe</b> (0% CPU/RAM) เพื่อทำเควสต์ในเครือ Roblox (เช่น <b>Scary Shawarma Kiosk 700 Orbs</b>) โดยไม่ต้องโหลดเกมจริง
+              </p>
+            </div>
+          </div>
+          <div class="roblox-banner-right">
+            <button type="button" id="btnToggleFakeRoblox" class="btn btn-roblox-action">
+              <span id="fakeRobloxBtnIcon">▶️</span>
+              <span id="fakeRobloxBtnText">เปิด Fake Roblox</span>
             </button>
           </div>
         </div>
@@ -532,7 +571,7 @@
             <span class="urgent-icon siren-rotating">🚨</span>
             <div class="urgent-title-group">
               <span class="urgent-badge-emergency">⚡ CRITICAL ALERT • 67-HOUR LIMIT</span>
-              <span class="urgent-title">ไฟกระพริบฉุกเฉิน: ยกเลิกคีย์ถาวร บังคับอัปเดตเป็น v2.6.0!</span>
+              <span class="urgent-title">ไฟกระพริบฉุกเฉิน: บังคับอัปเดตเป็น v2.7.0 (Fake Play Roblox)!</span>
             </div>
             <span class="urgent-icon siren-rotating">🚨</span>
           </div>
@@ -585,10 +624,6 @@
           <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
           ⚡ อัปเดตอัตโนมัติทันที
         </button>
-        <button id="btnDownloadUpdate" class="btn btn-cyan hidden">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><path d="M19 9h-4V3H9v6H5l7 7 7-7zM5 18v2h14v-2H5z"/></svg>
-          ดาวน์โหลดไฟล์ Setup (.zip)
-        </button>
         <button id="btnCloseUpdateModal" class="btn btn-secondary">ปิด</button>
       </div>
     </div>
@@ -605,7 +640,7 @@
         </div>
         <div>
           <h3 class="shiny-text">🎉 อัปเดตโปรแกรมเป็นเวอร์ชันใหม่เรียบร้อย!</h3>
-          <p class="modal-subheading">ยินดีต้อนรับสู่ Discord Quest Auto <span id="successVersionTag" class="text-green font-bold">v2.6.0</span></p>
+          <p class="modal-subheading">ยินดีต้อนรับสู่ Discord Quest Auto <span id="successVersionTag" class="text-green font-bold">v2.7.0</span></p>
         </div>
       </div>
       <div class="modal-body">
