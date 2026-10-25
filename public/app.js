@@ -57,6 +57,93 @@ const updateStatusText = document.getElementById('updateStatusText');
 const changelogList = document.getElementById('changelogList');
 let latestReleaseUrl = '/api/download-latest';
 
+// Emergency Red Alert & Strobe Elements
+const screenStrobeOverlay = document.getElementById('screenStrobeOverlay');
+const emergencyTopSirenBanner = document.getElementById('emergencyTopSirenBanner');
+const topBannerVersion = document.getElementById('topBannerVersion');
+const btnTopBannerUpdate = document.getElementById('btnTopBannerUpdate');
+const updateModalCard = document.getElementById('updateModalCard');
+const updateHazardBar = document.getElementById('updateHazardBar');
+const policeStrobeBar = document.getElementById('policeStrobeBar');
+const btnToggleSirenSound = document.getElementById('btnToggleSirenSound');
+const sirenSoundIcon = document.getElementById('sirenSoundIcon');
+const sirenSoundText = document.getElementById('sirenSoundText');
+
+// --- Emergency Police Siren Synthesizer (Web Audio API) ---
+let audioCtx = null;
+let sirenOsc = null;
+let sirenGain = null;
+let sirenActive = false;
+let sirenMuted = false;
+
+function startEmergencySiren() {
+  if (sirenMuted || sirenActive) return;
+  try {
+    const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContextClass) return;
+    if (!audioCtx) audioCtx = new AudioContextClass();
+    if (audioCtx.state === 'suspended') {
+      audioCtx.resume();
+    }
+
+    sirenOsc = audioCtx.createOscillator();
+    sirenGain = audioCtx.createGain();
+
+    sirenOsc.type = 'sawtooth';
+    sirenGain.gain.setValueAtTime(0.06, audioCtx.currentTime);
+
+    // Siren modulation: alternate between 620Hz and 980Hz (police siren whoop)
+    const now = audioCtx.currentTime;
+    const cycles = 8;
+    for (let i = 0; i < cycles; i++) {
+      const t = now + i * 0.6;
+      sirenOsc.frequency.setValueAtTime(620, t);
+      sirenOsc.frequency.linearRampToValueAtTime(980, t + 0.3);
+      sirenOsc.frequency.linearRampToValueAtTime(620, t + 0.6);
+    }
+
+    sirenOsc.connect(sirenGain);
+    sirenGain.connect(audioCtx.destination);
+    sirenOsc.start();
+    sirenActive = true;
+
+    // Auto ramp down gain at end
+    const totalDuration = cycles * 0.6;
+    sirenGain.gain.setValueAtTime(0.06, now + totalDuration - 0.4);
+    sirenGain.gain.linearRampToValueAtTime(0.001, now + totalDuration);
+
+    setTimeout(() => {
+      stopEmergencySiren();
+    }, totalDuration * 1000);
+  } catch (e) {
+    console.warn('Web Audio Siren notice:', e);
+  }
+}
+
+function stopEmergencySiren() {
+  if (sirenOsc) {
+    try {
+      sirenOsc.stop();
+      sirenOsc.disconnect();
+    } catch (_) {}
+    sirenOsc = null;
+  }
+  sirenActive = false;
+}
+
+function toggleSirenMute() {
+  sirenMuted = !sirenMuted;
+  if (sirenMuted) {
+    stopEmergencySiren();
+    if (sirenSoundIcon) sirenSoundIcon.textContent = '🔇';
+    if (sirenSoundText) sirenSoundText.textContent = 'เสียงไซเรน: ปิดอยู่ (คลิกเพื่อเปิด)';
+  } else {
+    if (sirenSoundIcon) sirenSoundIcon.textContent = '🔊';
+    if (sirenSoundText) sirenSoundText.textContent = 'เสียงไซเรน: เปิดอยู่ (คลิกเพื่อปิด)';
+    startEmergencySiren();
+  }
+}
+
 // Account Switcher Elements
 const accountModal = document.getElementById('accountModal');
 const btnAccountHistory = document.getElementById('btnAccountHistory');
@@ -712,9 +799,19 @@ function setupEventListeners() {
       }
     });
   }
+  if (btnTopBannerUpdate) {
+    btnTopBannerUpdate.addEventListener('click', () => {
+      checkForUpdates(true);
+    });
+  }
+  if (btnToggleSirenSound) {
+    btnToggleSirenSound.addEventListener('click', toggleSirenMute);
+  }
   if (btnCloseUpdateModal) {
     btnCloseUpdateModal.addEventListener('click', () => {
       updateModal.classList.add('hidden');
+      if (screenStrobeOverlay) screenStrobeOverlay.classList.add('hidden');
+      stopEmergencySiren();
     });
   }
 
@@ -821,6 +918,7 @@ async function checkForUpdates(openModalOnResult = false) {
 
     currentVersionTag.textContent = `v${data.currentVersion}`;
     latestVersionTag.textContent = `v${data.latestVersion}`;
+    if (topBannerVersion) topBannerVersion.textContent = `v${data.latestVersion}`;
     latestReleaseUrl = data.downloadUrl || data.releaseUrl || '/api/download-latest';
 
     // Populate Changelog
@@ -838,27 +936,48 @@ async function checkForUpdates(openModalOnResult = false) {
     const urgentCountdownTimer = document.getElementById('urgentCountdownTimer');
 
     if (data.hasUpdate) {
-      // Show badge on button
+      // 1. Show badge on header button & activate top dashboard banner
       if (updateBadge) updateBadge.classList.remove('hidden');
+      if (emergencyTopSirenBanner) emergencyTopSirenBanner.classList.remove('hidden');
+
+      // 2. Trigger Red Alert Strobe & Police Lights on Modal Card
+      if (updateModalCard) updateModalCard.classList.add('emergency-alert-mode');
+      if (updateHazardBar) updateHazardBar.classList.remove('hidden');
+      if (policeStrobeBar) policeStrobeBar.classList.remove('hidden');
+
+      // 3. Update Status text with flashing warning
       updateStatusBanner.className = 'update-status-banner has-update';
-      updateStatusText.innerHTML = `🚀 ตรวจพบเวอร์ชันใหม่ <b>v${data.latestVersion}</b> พร้อมให้อัปเดต!`;
+      updateStatusText.innerHTML = `🚨 <b>[ฉุกเฉินไฟกระพริบแดง]</b> ตรวจพบเวอร์ชันใหม่ <b>v${data.latestVersion}</b> บังคับอัปเดตด่วน!`;
       if (btnAutoUpdate) btnAutoUpdate.classList.remove('hidden');
       if (btnDownloadUpdate) btnDownloadUpdate.classList.remove('hidden');
 
-      // Trigger 67-Hour Joke Countdown Banner
+      // 4. Trigger 67-Hour Joke Countdown Banner
       if (urgentUpdateBanner) {
         urgentUpdateBanner.classList.remove('hidden');
         startUrgentCountdown(urgentCountdownTimer);
       }
 
-      // Auto-popup alert for older versions (e.g. 2.4.1 or older than latest)
+      // 5. Activate full-screen emergency red strobe vignette
+      if (screenStrobeOverlay) screenStrobeOverlay.classList.remove('hidden');
+
+      // 6. Auto-popup alert for older versions (e.g. 2.4.1 or older than latest)
       if (!sessionStorage.getItem('update_modal_shown')) {
         sessionStorage.setItem('update_modal_shown', 'true');
         if (updateModal) updateModal.classList.remove('hidden');
+        startEmergencySiren();
+      } else if (openModalOnResult) {
+        startEmergencySiren();
       }
     } else {
       if (updateBadge) updateBadge.classList.add('hidden');
+      if (emergencyTopSirenBanner) emergencyTopSirenBanner.classList.add('hidden');
       if (urgentUpdateBanner) urgentUpdateBanner.classList.add('hidden');
+      if (screenStrobeOverlay) screenStrobeOverlay.classList.add('hidden');
+      if (updateModalCard) updateModalCard.classList.remove('emergency-alert-mode');
+      if (updateHazardBar) updateHazardBar.classList.add('hidden');
+      if (policeStrobeBar) policeStrobeBar.classList.add('hidden');
+      stopEmergencySiren();
+
       updateStatusBanner.className = 'update-status-banner success';
       updateStatusText.textContent = '✨ คุณกำลังใช้งานเวอร์ชันล่าสุดแล้ว ไม่จำเป็นต้องอัปเดต';
       if (btnAutoUpdate) btnAutoUpdate.classList.add('hidden');

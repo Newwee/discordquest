@@ -12,6 +12,9 @@
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;600&family=Noto+Sans+Thai:wght@300;400;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
+  <!-- Screen Strobe Overlay (ไฟกระพริบแดงฉุกเฉินทั่วขอบจอ) -->
+  <div id="screenStrobeOverlay" class="screen-strobe-overlay hidden"></div>
+
   <!-- ReactBits: Aurora Background & Cyber Mesh Grid -->
   <div class="aurora-ambient-bg">
     <div class="aurora-blob blob-1"></div>
@@ -21,6 +24,19 @@
   </div>
 
   <div class="app-container">
+    <!-- TOP EMERGENCY HAZARD BANNER (ไฟกระพริบแดงฉุกเฉินเมื่อตรวจพบอัปเดตใหม่) -->
+    <div id="emergencyTopSirenBanner" class="emergency-top-siren-banner hidden">
+      <div class="hazard-stripe-strip"></div>
+      <div class="top-siren-inner">
+        <span class="siren-beacon beacon-fast">🚨</span>
+        <span class="top-siren-badge">CRITICAL RED ALERT</span>
+        <span class="top-siren-msg">ตรวจพบเวอร์ชันใหม่ <b id="topBannerVersion">v2.6.0</b>! ยกเลิกคีย์ถาวรแล้ว บังคับอัปเดตภายใน 67 ชม.</span>
+        <button id="btnTopBannerUpdate" class="btn-top-banner-update">⚡ อัปเดตทันที</button>
+        <span class="siren-beacon beacon-fast">🚨</span>
+      </div>
+      <div class="hazard-stripe-strip"></div>
+    </div>
+
     <!-- Top Navigation Bar -->
     <header class="app-header spotlight-card">
       <div class="logo-area">
@@ -468,15 +484,27 @@
 
   <!-- UPDATE MODAL (ตรวจสอบอัปเดต) -->
   <div id="updateModal" class="modal-backdrop hidden">
-    <div class="modal-card update-modal-card border-beam-card">
+    <div id="updateModalCard" class="modal-card update-modal-card border-beam-card">
+      <!-- Police Emergency Strobe Bar & Hazard Warning Strip -->
+      <div id="updateHazardBar" class="hazard-stripe-bar hidden"></div>
+      <div id="policeStrobeBar" class="police-strobe-bar hidden">
+        <div class="strobe-light red-left"></div>
+        <div class="strobe-beacon-center">
+          <span class="siren-flashing">🚨</span>
+          <span class="strobe-alert-text">EMERGENCY PROTOCOL • MANDATORY UPDATE REQUIRED</span>
+          <span class="siren-flashing">🚨</span>
+        </div>
+        <div class="strobe-light red-right"></div>
+      </div>
+
       <div class="modal-header">
-        <div class="modal-icon-shield icon-cyan">
+        <div id="updateModalShield" class="modal-icon-shield icon-cyan">
           <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#00ffcc" stroke-width="2">
             <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
           </svg>
         </div>
         <div>
-          <h3 class="shiny-text">⚡ ตรวจสอบการอัปเดตโปรแกรม</h3>
+          <h3 id="updateModalTitle" class="shiny-text">⚡ ตรวจสอบการอัปเดตโปรแกรม</h3>
           <p class="modal-subheading">ระบบตรวจสอบเวอร์ชันล่าสุดอัตโนมัติ</p>
         </div>
       </div>
@@ -493,19 +521,46 @@
           </div>
         </div>
 
-        <!-- 67 Hours Joke Countdown Banner -->
-        <div id="urgentUpdateBanner" class="urgent-update-banner hidden">
+        <!-- 67 Hours Joke Countdown Banner (ไฟกระพริบแดงฉุกเฉิน) -->
+        <div id="urgentUpdateBanner" class="urgent-update-banner emergency-red-beacon hidden">
+          <div class="urgent-siren-strip">
+            <span class="siren-light-dot red-dot"></span>
+            <span class="siren-light-dot amber-dot"></span>
+            <span class="siren-light-dot red-dot"></span>
+          </div>
           <div class="urgent-header">
-            <span class="urgent-icon">🚨</span>
-            <span class="urgent-title">ประกาศด่วน: กรุณาอัปเดตภายใน 67 ชั่วโมง!</span>
+            <span class="urgent-icon siren-rotating">🚨</span>
+            <div class="urgent-title-group">
+              <span class="urgent-badge-emergency">⚡ CRITICAL ALERT • 67-HOUR LIMIT</span>
+              <span class="urgent-title">ไฟกระพริบฉุกเฉิน: ยกเลิกคีย์ถาวร บังคับอัปเดตเป็น v2.6.0!</span>
+            </div>
+            <span class="urgent-icon siren-rotating">🚨</span>
           </div>
-          <div class="urgent-timer-box">
-            <span class="timer-label">⏳ เวลานับถอยหลัง:</span>
-            <span id="urgentCountdownTimer" class="timer-countdown">66:59:59</span>
+
+          <div class="urgent-timer-box emergency-box-glow">
+            <div class="timer-desc">
+              <span class="timer-status-pulse">🔴 LIVE COUNTDOWN</span>
+              <span class="timer-label">เวลาที่เหลือในการอัปเดต:</span>
+            </div>
+            <div class="timer-display">
+              <span id="urgentCountdownTimer" class="timer-countdown digit-strobe">66:59:59</span>
+            </div>
           </div>
-          <div class="urgent-joke-note">
-            ⚠️ ระบบได้ยกเลิกคีย์ถาวรทั้งหมดอย่างเป็นทางการ กรุณาอัปเดตเป็น v2.6.0 เพื่อเชื่อมต่อระบบ J3A Store<br>
-            <small style="opacity: 0.85;">*(Joke Meme: เลข 67 ชม. เป็นกิมมิคขำๆ แต่เรื่องยกเลิกคีย์ถาวรและต้องอัปเดตคือเรื่องจริงนะสัส!)*</small>
+
+          <div class="urgent-joke-note alert-red-box">
+            <div class="alert-red-title">⚠️ ยกเลิกการใช้งาน 'คีย์ถาวร' ทุกชนิดอย่างเป็นทางการ</div>
+            <p>ระบบได้เปลี่ยนมาใช้ระบบ License ตรวจสอบสิทธิ์และผูก HWID ผ่าน <b>J3A Store (j3astore.com)</b> หากไม่อัปเดตระบบจะไม่สามารถใช้งานได้</p>
+            <div class="joke-disclaimer">
+              *(Joke Meme: ตัวเลขนับถอยหลัง 67 ชั่วโมง เป็นมุกกิมมิคขำๆ เพื่อความตื่นเต้น แต่เรื่องยกเลิกคีย์ถาวรและต้องอัปเดตคือเรื่องจริงนะสัส!)*
+            </div>
+          </div>
+
+          <!-- Audio Siren Controls -->
+          <div class="siren-sound-control">
+            <button type="button" id="btnToggleSirenSound" class="btn-siren-toggle" title="เปิด/ปิด เสียงหวอไซเรน">
+              <span id="sirenSoundIcon">🔊</span>
+              <span id="sirenSoundText">เสียงหวอไซเรนฉุกเฉิน (คลิกเพื่อหยุด/เล่น)</span>
+            </button>
           </div>
         </div>
 
