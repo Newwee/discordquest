@@ -284,12 +284,23 @@ function setupEventListeners() {
     });
   }
 
-  // 1.1 LICENSE STATUS & BOTTOM BAR ENGINE
-  const btnLicenseStatus = document.getElementById('btnLicenseStatus');
+  // 1.1 J3A STORE LICENSE & ACTIVATION MODAL ENGINE
+  const headerLicenseBadge = document.getElementById('headerLicenseBadge');
+  const headerBadgeText = document.getElementById('headerBadgeText');
   const lbStatusText = document.getElementById('lbStatusText');
   const lbPackageText = document.getElementById('lbPackageText');
   const lbRemainingText = document.getElementById('lbRemainingText');
   const lbStatusPill = document.getElementById('lbStatusPill');
+
+  const licenseActivationModal = document.getElementById('licenseActivationModal');
+  const modalHwidText = document.getElementById('modalHwidText');
+  const btnModalCopyHwid = document.getElementById('btnModalCopyHwid');
+  const modalCopyIcon = document.getElementById('modalCopyIcon');
+  const modalLicenseInput = document.getElementById('modalLicenseInput');
+  const btnModalActivate = document.getElementById('btnModalActivate');
+  const modalLicenseError = document.getElementById('modalLicenseError');
+  const modalLicenseSuccess = document.getElementById('modalLicenseSuccess');
+
   const licenseExpiredModal = document.getElementById('licenseExpiredModal');
   const btnSwitchExpiredKey = document.getElementById('btnSwitchExpiredKey');
 
@@ -302,34 +313,50 @@ function setupEventListeners() {
         const data = await res.json();
         activeLicenseInfo = data;
 
-        if (data.activated && !data.expired) {
+        if (modalHwidText && data.hwid) {
+          modalHwidText.textContent = data.hwid;
+        }
+
+        if (data.activated && data.badge) {
+          // สิทธิ์ถูกต้อง: ปิด Activation Modal และอัปเดต Header Badge
+          if (licenseActivationModal && !licenseActivationModal.classList.contains('hidden')) {
+            licenseActivationModal.classList.add('hidden');
+          }
+          if (licenseExpiredModal && !licenseExpiredModal.classList.contains('hidden')) {
+            licenseExpiredModal.classList.add('hidden');
+          }
+
+          if (headerBadgeText) {
+            headerBadgeText.textContent = data.badge;
+          }
+
           if (lbStatusText) lbStatusText.textContent = 'สถานะ: ใช้งานได้';
-          if (lbPackageText) lbPackageText.textContent = `[${data.package || data.badge || 'Standard'}]`;
-          if (lbRemainingText) lbRemainingText.textContent = `[${data.remainingText || '--'}]`;
+          if (lbPackageText) lbPackageText.textContent = `[${data.tierName || 'Standard'}]`;
+          if (lbRemainingText) {
+            const rem = typeof data.remainingDays === 'number' ? `${data.remainingDays} วัน` : '--';
+            lbRemainingText.textContent = `[เหลืออีก ${rem}]`;
+          }
 
           if (lbStatusPill) {
             const dot = lbStatusPill.querySelector('.status-dot');
             if (dot) dot.classList.remove('expired');
           }
-
-          const navLicenseText = document.getElementById('navLicenseText');
-          if (navLicenseText && data.maskedKey) {
-            navLicenseText.textContent = data.maskedKey;
-          }
         } else {
-          // Expired or unlicensed
-          if (lbStatusText) lbStatusText.textContent = 'สถานะ: หมดอายุ';
-          if (lbPackageText) lbPackageText.textContent = `[${data.package || 'Expired'}]`;
-          if (lbRemainingText) lbRemainingText.textContent = '[หมดอายุแล้ว]';
+          // ยังไม่ได้ Activate หรือหมดอายุ: ห้ามเข้าหน้าหลัก แสดง Modal Activation ทันที
+          if (headerBadgeText) {
+            headerBadgeText.textContent = '🔒 ยังไม่ได้เปิดใช้งาน';
+          }
+          if (lbStatusText) lbStatusText.textContent = 'สถานะ: ยังไม่เปิดใช้งาน';
+          if (lbPackageText) lbPackageText.textContent = '[Unlicensed]';
+          if (lbRemainingText) lbRemainingText.textContent = '[--]';
 
           if (lbStatusPill) {
             const dot = lbStatusPill.querySelector('.status-dot');
             if (dot) dot.classList.add('expired');
           }
 
-          // Trigger Expiration Modal Popup
-          if (licenseExpiredModal && licenseExpiredModal.classList.contains('hidden')) {
-            licenseExpiredModal.classList.remove('hidden');
+          if (licenseActivationModal && licenseActivationModal.classList.contains('hidden')) {
+            licenseActivationModal.classList.remove('hidden');
           }
         }
       }
@@ -340,6 +367,103 @@ function setupEventListeners() {
   syncLicenseStatus();
   setInterval(syncLicenseStatus, 20000);
 
+  // Copy HWID from Modal
+  if (btnModalCopyHwid) {
+    btnModalCopyHwid.addEventListener('click', async () => {
+      const hwidToCopy = modalHwidText?.textContent || '';
+      try {
+        await navigator.clipboard.writeText(hwidToCopy);
+      } catch {
+        const t = document.createElement('input');
+        t.value = hwidToCopy;
+        document.body.appendChild(t);
+        t.select();
+        document.execCommand('copy');
+        document.body.removeChild(t);
+      }
+
+      btnModalCopyHwid.innerHTML = '<span>✓</span> คัดลอกแล้ว';
+      setTimeout(() => {
+        btnModalCopyHwid.innerHTML = '<span id="modalCopyIcon">📋</span> คัดลอก';
+      }, 2000);
+    });
+  }
+
+  // Format Modal License Input (J3ADQ-xxxx-xxxx-xxxx)
+  if (modalLicenseInput) {
+    modalLicenseInput.addEventListener('input', (e) => {
+      if (modalLicenseError) modalLicenseError.classList.add('hidden');
+      if (modalLicenseSuccess) modalLicenseSuccess.classList.add('hidden');
+      e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 36);
+    });
+
+    modalLicenseInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') {
+        if (btnModalActivate) btnModalActivate.click();
+      }
+    });
+  }
+
+  // Activate Button in Modal
+  if (btnModalActivate) {
+    btnModalActivate.addEventListener('click', async () => {
+      const rawKey = (modalLicenseInput?.value || '').trim().toUpperCase();
+
+      if (modalLicenseError) modalLicenseError.classList.add('hidden');
+      if (modalLicenseSuccess) modalLicenseSuccess.classList.add('hidden');
+
+      if (!rawKey) {
+        if (modalLicenseError) {
+          modalLicenseError.textContent = 'กรุณาระบุ License Key ก่อนกดเปิดใช้งาน';
+          modalLicenseError.classList.remove('hidden');
+        }
+        modalLicenseInput?.focus();
+        return;
+      }
+
+      btnModalActivate.disabled = true;
+      btnModalActivate.innerHTML = '<span class="sync-dot"></span> กำลังตรวจสอบกับเซิร์ฟเวอร์ J3A Store...';
+
+      try {
+        const res = await fetch('/api/license/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ key: rawKey })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          if (modalLicenseSuccess) {
+            modalLicenseSuccess.textContent = `✅ เปิดใช้งานสำเร็จ! [${data.badge || data.tierName || 'License'}] กำลังเข้าสู่ระบบ...`;
+            modalLicenseSuccess.classList.remove('hidden');
+          }
+
+          localStorage.setItem('license_verified', 'true');
+          localStorage.setItem('license_key', rawKey);
+
+          setTimeout(() => {
+            if (licenseActivationModal) licenseActivationModal.classList.add('hidden');
+            syncLicenseStatus();
+          }, 900);
+        } else {
+          if (modalLicenseError) {
+            modalLicenseError.textContent = data.error || 'License Key ไม่ถูกต้องหรือหมดอายุ';
+            modalLicenseError.classList.remove('hidden');
+          }
+        }
+      } catch (err) {
+        if (modalLicenseError) {
+          modalLicenseError.textContent = `เกิดข้อผิดพลาดในการเชื่อมต่อ: ${err.message}`;
+          modalLicenseError.classList.remove('hidden');
+        }
+      } finally {
+        btnModalActivate.disabled = false;
+        btnModalActivate.innerHTML = '🚀 เปิดใช้งาน (Activate)';
+      }
+    });
+  }
+
   if (btnSwitchExpiredKey) {
     btnSwitchExpiredKey.addEventListener('click', async () => {
       try {
@@ -347,31 +471,33 @@ function setupEventListeners() {
       } catch (_) {}
       localStorage.removeItem('license_verified');
       localStorage.removeItem('license_key');
-      window.location.href = '/license.html';
+      if (licenseExpiredModal) licenseExpiredModal.classList.add('hidden');
+      if (licenseActivationModal) licenseActivationModal.classList.remove('hidden');
     });
   }
 
-  if (btnLicenseStatus) {
-    btnLicenseStatus.addEventListener('click', () => {
-      const keyStr = activeLicenseInfo?.rawKey || localStorage.getItem('license_key') || 'ไม่มีข้อมูล';
-      const pkgStr = activeLicenseInfo?.package || 'Standard';
-      const remStr = activeLicenseInfo?.remainingText || '--';
+  if (headerLicenseBadge) {
+    headerLicenseBadge.addEventListener('click', () => {
+      const keyStr = activeLicenseInfo?.key || activeLicenseInfo?.license?.key || localStorage.getItem('license_key') || 'ไม่มีข้อมูล';
+      const tierStr = activeLicenseInfo?.tierName || activeLicenseInfo?.license?.tierName || 'Standard';
+      const remDays = activeLicenseInfo?.remainingDays ?? activeLicenseInfo?.license?.remainingDays ?? '--';
       const hwidStr = activeLicenseInfo?.hwid || 'N/A';
 
       const promptLogout = confirm(
-        `🔑 ข้อมูลสิทธิ์ License Key (HWID Locked)\n\n` +
+        `🔑 ข้อมูลสิทธิ์ License Key (J3A Store Verified)\n\n` +
         `• คีย์: ${keyStr}\n` +
-        `• แพ็กเกจ: ${pkgStr}\n` +
-        `• คงเหลือเวลา: ${remStr}\n` +
+        `• แพ็กเกจ: ${tierStr}\n` +
+        `• คงเหลือ: ${remDays} วัน\n` +
         `• HWID: ${hwidStr.slice(0, 16)}...\n` +
-        `• ร้านค้า: https://j3a-store.vercel.app\n\n` +
+        `• สั่งซื้อ/ต่ออายุ: https://j3astore.com\n\n` +
         `ต้องการออกจากระบบเพื่อสลับเปลี่ยน License Key หรือไม่?`
       );
       if (promptLogout) {
         fetch('/api/license/logout', { method: 'POST' }).catch(() => {});
         localStorage.removeItem('license_verified');
         localStorage.removeItem('license_key');
-        window.location.href = '/license.html';
+        if (licenseActivationModal) licenseActivationModal.classList.remove('hidden');
+        syncLicenseStatus();
       }
     });
   }

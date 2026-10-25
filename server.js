@@ -5,19 +5,19 @@ const os = require('node:os');
 const crypto = require('node:crypto');
 const { exec } = require('node:child_process');
 const {
-  BASE_DIR,
-  LICENSE_ENC_FILE,
-  STORE_URL,
-  getSystemHWID,
-  maskKey,
-  isLicensed,
-  getActiveKey,
-  getLicenseDetails,
-  checkStoredLicense,
-  activateLicenseKey,
-  logoutLicense,
-  startLicenseWatcher
-} = require('./license_gate');
+  PRIMARY_API_URL,
+  FALLBACK_API_URL,
+  STORE_WEB_URL,
+  APP_DATA_DIR,
+  LICENSE_FILE,
+  getMachineHWID,
+  verifyOrActivateKey,
+  checkStartupLicense,
+  loadLocalLicense,
+  saveLocalLicense,
+  clearLocalLicense,
+  getLicenseBadge,
+} = require('./license');
 const { findLocalDiscordToken } = require('./token_extractor');
 const {
   ensureDummyStub,
@@ -26,6 +26,26 @@ const {
   spawnFakeGame,
   killFakeGame
 } = require('./fake_game_spawner');
+
+let isLicenseActive = false;
+let currentLicenseData = null;
+
+function isLicensed() {
+  return isLicenseActive;
+}
+
+function maskKey(key) {
+  if (!key) return '';
+  const clean = key.trim().toUpperCase();
+  const parts = clean.split('-');
+  if (parts.length >= 4) {
+    return `${parts[0]}-${parts[1]}-****-${parts[parts.length - 1]}`;
+  }
+  if (clean.length > 8) {
+    return `${clean.slice(0, 6)}****${clean.slice(-4)}`;
+  }
+  return '****';
+}
 
 const PORT = 4545;
 const CONFIG_FILE = path.join(__dirname, 'config.json');
@@ -42,9 +62,7 @@ let currentConfig = {
   accounts: []
 };
 
-function getMachineHWID() {
-  return getSystemHWID();
-}
+
 
 function getLocalVersionInfo() {
   if (fs.existsSync(VERSION_FILE)) {
@@ -941,6 +959,7 @@ const server = http.createServer(async (req, res) => {
     '/api/hwid',
     '/api/license/status',
     '/api/license/activate',
+    '/api/license/logout',
     '/api/version',
     '/api/check-update',
     '/api/download-latest',
@@ -1143,18 +1162,28 @@ const server = http.createServer(async (req, res) => {
 
   // 4.3.3 Get Machine HWID
   if (pathname === '/api/hwid' && req.method === 'GET') {
-    const hwid = getSystemHWID();
+    const hwid = getMachineHWID();
     res.writeHead(200, { 'Content-Type': 'application/json' });
     return res.end(JSON.stringify({ hwid }));
   }
 
   // 4.3.4 Get License Status
   if (pathname === '/api/license/status' && req.method === 'GET') {
-    const details = getLicenseDetails();
+    const cached = loadLocalLicense();
+    const hwid = getMachineHWID();
+    const badge = getLicenseBadge(currentLicenseData || cached);
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify({
-      activated: details.active,
-      ...details
+      activated: isLicenseActive,
+      hwid: hwid,
+      key: (currentLicenseData?.key || cached?.key) ? maskKey(currentLicenseData?.key || cached?.key) : '',
+      tier: currentLicenseData?.tier || cached?.tier || '',
+      tierName: currentLicenseData?.tierName || cached?.tierName || '',
+      remainingDays: currentLicenseData?.remainingDays ?? cached?.remainingDays,
+      expiresAt: currentLicenseData?.expiresAt || cached?.expiresAt,
+      badge: badge.text,
+      badgeData: badge,
+      storeUrl: STORE_WEB_URL
     }));
   }
 
@@ -1165,15 +1194,26 @@ const server = http.createServer(async (req, res) => {
     req.on('end', async () => {
       let data = {};
       try { data = JSON.parse(body || '{}'); } catch {}
-      const result = await activateLicenseKey(data.key);
+      const result = await verifyOrActivateKey(data.key);
       if (result.success) {
-        log(`🔑 เปิดใช้งาน License Key สำเร็จ: ${maskKey(result.key)} [${result.package}]`, 'success');
+        currentLicenseData = result;
+        isLicenseActive = true;
+        const badge = getLicenseBadge(result);
+        log(`🔑 เปิดใช้งาน License Key สำเร็จ: ${badge.text}`, 'success');
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
-        return res.end(JSON.stringify(result));
+        return res.end(JSON.stringify({
+          success: true,
+          ...result,
+          badge: badge.text,
+          badgeData: badge
+        }));
       } else {
-        log(`❌ เปิดใช้งาน License Key ล้มเหลว: ${result.message}`, 'error');
+        log(`❌ เปิดใช้งาน License Key ล้มเหลว: ${result.error}`, 'error');
         res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
-        return res.end(JSON.stringify(result));
+        return res.end(JSON.stringify({
+          success: false,
+          error: result.error || 'License Key ไม่ถูกต้องหรือหมดอายุ'
+        }));
       }
     });
     return;
@@ -1181,9 +1221,11 @@ const server = http.createServer(async (req, res) => {
 
   // 4.3.6 Logout / Remove License Key
   if (pathname === '/api/license/logout' && req.method === 'POST') {
-    logoutLicense();
+    clearLocalLicense();
+    isLicenseActive = false;
+    currentLicenseData = null;
     log('🚪 ออกจากระบบและลบสิทธิ์ License Key บนเครื่องนี้เรียบร้อยแล้ว', 'info');
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify({ success: true, message: 'ออกจากระบบเรียบร้อยแล้ว' }));
   }
 
@@ -1423,26 +1465,53 @@ server.listen(PORT, '127.0.0.1', () => {
   log(`🌟 Discord Quest Auto Server พร้อมทำงานที่ http://localhost:${PORT}`, 'success');
   console.log(`Server running at http://localhost:${PORT}`);
 
-  checkStoredLicense().then(result => {
-    if (result.success) {
-      log(`🔑 License ผ่านการตรวจสอบแล้ว: ${maskKey(result.key)} [${result.package || 'Active'}] (HWID: ${result.hwid})`, 'success');
-      log(`⏳ คงเหลือเวลาใช้งาน: ${result.remainingText}`, 'info');
+  checkStartupLicense().then(result => {
+    if (!result.requiredActivation && result.license && result.license.success) {
+      currentLicenseData = result.license;
+      isLicenseActive = true;
+      const badge = getLicenseBadge(result.license);
+      log(`🔑 ตรวจสอบสิทธิ์ License สำเร็จ: ${badge.text}`, 'success');
     } else {
-      log(`🔒 ยังไม่ได้เปิดใช้งาน License Key หรือคีย์หมดอายุ กรุณาเปิดใช้งานที่หน้าต่างโปรแกรม http://localhost:${PORT}`, 'warn');
+      isLicenseActive = false;
+      currentLicenseData = null;
+      log('🔒 ยังไม่ได้เปิดใช้งาน License Key หรือคีย์หมดอายุ กรุณาเปิดใช้งานที่หน้าต่างโปรแกรม', 'warn');
     }
   });
 
-  // รัน Background Watcher ตรวจสอบอายุคีย์ทุกๆ 30 นาที
-  startLicenseWatcher(expiredResult => {
-    log(`🔒 [LICENSE EXPIRED] ${expiredResult.message || 'คีย์ของคุณหมดอายุแล้ว'}`, 'error');
-    if (runnerState.isRunning) {
-      runnerState.shouldStop = true;
-      runnerState.isRunning = false;
-      if (activeFakeGame) {
-        killFakeGame(activeFakeGame);
-        activeFakeGame = null;
+  // Background Heartbeat Checker: ตรวจสอบสิทธิ์ซ้ำทุกๆ 30 นาที
+  setInterval(async () => {
+    const cached = loadLocalLicense();
+    if (!cached || !cached.key) {
+      if (isLicenseActive) {
+        handleLicenseRevoked('ไม่พบ License Key ในเครื่อง');
       }
-      log('🛑 ระบบหยุดการทำเควสต์อัตโนมัติทันทีเนื่องจาก License หมดอายุ', 'warn');
+      return;
     }
-  });
+
+    try {
+      const checkRes = await verifyOrActivateKey(cached.key);
+      if (!checkRes.success) {
+        handleLicenseRevoked(checkRes.error || 'คีย์หมดอายุหรือถูกระงับสิทธิ์');
+      } else {
+        currentLicenseData = checkRes;
+        isLicenseActive = true;
+      }
+    } catch (_) {}
+  }, 30 * 60 * 1000);
 });
+
+function handleLicenseRevoked(reason) {
+  isLicenseActive = false;
+  currentLicenseData = null;
+  clearLocalLicense();
+  log(`🔒 [HEARTBEAT EXPIRED] License หมดอายุหรือถูกระงับ: ${reason}`, 'error');
+  if (runnerState.isRunning) {
+    runnerState.shouldStop = true;
+    runnerState.isRunning = false;
+    if (activeFakeGame) {
+      killFakeGame(activeFakeGame);
+      activeFakeGame = null;
+    }
+    log('🛑 ระบบหยุดการทำงานของ Bot เควสต์ทันทีเนื่องจากสิทธิ์หมดอายุ', 'warn');
+  }
+}

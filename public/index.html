@@ -46,10 +46,9 @@
           เปิด Discord Web
         </button>
 
-        <!-- License Key Info / Switch Button -->
-        <button id="btnLicenseStatus" class="btn btn-secondary" title="ข้อมูลสิทธิ์ License Key (คลิกเพื่อดูหรือสลับเปลี่ยนคีย์)">
-          <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5M7 10l-4 4 3 3 4-4"/><circle cx="15.5" cy="8.5" r="4.5"/></svg>
-          <span id="navLicenseText">สิทธิ์คีย์</span>
+        <!-- Header License Status Badge (J3A Store Verified) -->
+        <button id="headerLicenseBadge" class="header-license-badge" title="คลิกเพื่อดูรายละเอียดสิทธิ์หรือสลับคีย์">
+          <span id="headerBadgeText">🟢 License: กำลังตรวจสอบ...</span>
         </button>
 
         <!-- Account Switcher Button -->
@@ -547,6 +546,70 @@
       </div>
       <div class="modal-footer">
         <button id="btnCloseAccountModal" class="btn btn-secondary" style="width: 100%;">ปิด</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- J3A AUTOQUEST LICENSE ACTIVATION MODAL (Dark Glassmorphism) -->
+  <div id="licenseActivationModal" class="modal-backdrop hidden glass-backdrop">
+    <div class="modal-card glass-modal-card">
+      <div class="modal-header">
+        <div class="modal-icon-shield">
+          <svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#00ffcc" stroke-width="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="shiny-text">J3A AutoQuest License Activation</h3>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">เชื่อมต่อระบบตรวจสอบสิทธิ์ J3A Store</p>
+        </div>
+      </div>
+
+      <div class="modal-body" style="gap: 14px;">
+        <!-- HWID Group -->
+        <div class="glass-field-group">
+          <label class="field-label" style="font-size: 11.5px;">
+            รหัสประจำเครื่องของคุณ (HWID)
+          </label>
+          <div class="glass-hwid-box">
+            <span id="modalHwidText" class="hwid-hash">กำลังดึงรหัส HWID...</span>
+            <button type="button" id="btnModalCopyHwid" class="btn-copy-mini" title="คลิกเพื่อคัดลอก HWID">
+              <span id="modalCopyIcon">📋</span> คัดลอก
+            </button>
+          </div>
+        </div>
+
+        <!-- Key Input Group -->
+        <div class="glass-field-group">
+          <label class="field-label" for="modalLicenseInput" style="font-size: 11.5px;">
+            License Key (Format: J3ADQ-xxxx-xxxx-xxxx)
+          </label>
+          <input 
+            type="text" 
+            id="modalLicenseInput" 
+            class="glass-key-input" 
+            placeholder="J3ADQ-XXXX-XXXX-XXXX" 
+            maxlength="36" 
+            autocomplete="off" 
+            spellcheck="false"
+          >
+        </div>
+
+        <!-- Alert Boxes -->
+        <div id="modalLicenseError" class="modal-alert-error hidden"></div>
+        <div id="modalLicenseSuccess" class="modal-alert-success hidden"></div>
+
+        <!-- Store Link -->
+        <div class="glass-store-link">
+          <span>🛒 สั่งซื้อคีย์ หรือ ต่ออายุสิทธิ์ได้ที่:</span>
+          <a href="https://j3astore.com" target="_blank" rel="noopener noreferrer">J3A Store</a>
+        </div>
+      </div>
+
+      <div class="modal-footer" style="padding-top: 8px;">
+        <button type="button" id="btnModalActivate" class="btn btn-primary" style="width: 100%; height: 44px; font-weight: 700; font-size: 14px;">
+          🚀 เปิดใช้งาน (Activate)
+        </button>
       </div>
     </div>
   </div>

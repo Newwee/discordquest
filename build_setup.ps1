@@ -7,6 +7,7 @@ New-Item -ItemType Directory -Path $targetDir | Out-Null
 
 $filesToInclude = @(
     "server.js",
+    "license.js",
     "license_gate.js",
     "token_extractor.js",
     "fake_game_spawner.js",
@@ -32,6 +33,7 @@ Copy-Item -Recurse (Join-Path $PSScriptRoot "public") -Destination $targetDir
 Write-Host "Obfuscating JavaScript files with Anti-Reverse Engineering & Self-Defending..."
 $jsFilesToObfuscate = @(
     (Join-Path $targetDir "server.js"),
+    (Join-Path $targetDir "license.js"),
     (Join-Path $targetDir "license_gate.js"),
     (Join-Path $targetDir "token_extractor.js"),
     (Join-Path $targetDir "fake_game_spawner.js"),

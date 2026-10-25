@@ -521,8 +521,8 @@
       <div class="logo-badge" aria-hidden="true" style="padding: 2px; overflow: hidden; border-color: rgba(245, 197, 24, 0.4); box-shadow: 0 0 24px rgba(245, 197, 24, 0.25);">
         <img src="logo.png" alt="Discord Quest Auto Logo" style="width: 100%; height: 100%; object-fit: cover; border-radius: 12px;">
       </div>
-      <h1 class="app-title">DISCORD QUEST AUTO</h1>
-      <p class="app-subtitle">กรุณาเปิดใช้งาน License Key เพื่อเข้าสู่ระบบ</p>
+      <h1 class="app-title">J3A AutoQuest License Activation</h1>
+      <p class="app-subtitle">เชื่อมต่อระบบตรวจสอบสิทธิ์ J3A Store</p>
     </header>
 
     <!-- 2. Form Body -->
@@ -536,10 +536,10 @@
             <line x1="8" y1="21" x2="16" y2="21"/>
             <line x1="12" y1="17" x2="12" y2="21"/>
           </svg>
-          รหัสประจำเครื่องของคุณ (Hardware ID - HWID)
+          รหัสประจำเครื่องของคุณ (HWID)
         </label>
         <div class="hwid-container">
-          <span id="hwidDisplay" class="hwid-text">HWID-8F92-4AE1-C307-E92A</span>
+          <span id="hwidDisplay" class="hwid-text">กำลังดึงรหัส HWID...</span>
           <button type="button" id="btnCopyHWID" class="btn-copy" title="คลิกเพื่อคัดลอกรหัส HWID">
             <svg id="copyIcon" viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>
@@ -550,35 +550,6 @@
         </div>
       </div>
 
-      <!-- Supported Packages Grid -->
-      <div class="field-group" style="margin-bottom: 12px;">
-        <label class="field-label">
-          <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2">
-            <rect x="2" y="7" width="20" height="14" rx="2" ry="2"/>
-            <path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>
-          </svg>
-          แพ็กเกจที่รองรับ (Prefixes)
-        </label>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; font-size: 11.5px;">
-          <div style="background: rgba(124, 92, 255, 0.08); border: 1px solid rgba(124, 92, 255, 0.2); padding: 8px 10px; border-radius: 8px;">
-            <div style="font-weight: 700; color: #a78bfa; font-family: var(--font-mono);">DAQ-3D-</div>
-            <div style="color: var(--text-muted);">ทดลอง 3 วัน (72 ชม.)</div>
-          </div>
-          <div style="background: rgba(16, 185, 129, 0.08); border: 1px solid rgba(16, 185, 129, 0.2); padding: 8px 10px; border-radius: 8px;">
-            <div style="font-weight: 700; color: #34d399; font-family: var(--font-mono);">DAQ-1W-</div>
-            <div style="color: var(--text-muted);">1 สัปดาห์ (7 วัน)</div>
-          </div>
-          <div style="background: rgba(59, 130, 246, 0.08); border: 1px solid rgba(59, 130, 246, 0.2); padding: 8px 10px; border-radius: 8px;">
-            <div style="font-weight: 700; color: #60a5fa; font-family: var(--font-mono);">DAQ-4W-</div>
-            <div style="color: var(--text-muted);">4 สัปดาห์ (28 วัน)</div>
-          </div>
-          <div style="background: rgba(245, 158, 11, 0.08); border: 1px solid rgba(245, 158, 11, 0.2); padding: 8px 10px; border-radius: 8px;">
-            <div style="font-weight: 700; color: #fbbf24; font-family: var(--font-mono);">DAQ-6M-</div>
-            <div style="color: var(--text-muted);">6 เดือน (180 วัน)</div>
-          </div>
-        </div>
-      </div>
-
       <!-- License Key Input Field -->
       <div class="field-group">
         <label class="field-label" for="licenseKeyInput">
@@ -586,15 +557,15 @@
             <path d="M21 2l-2 2m-1.5 1.5L16 7l-1.5-1.5M7 10l-4 4 3 3 4-4"/>
             <circle cx="15.5" cy="8.5" r="4.5"/>
           </svg>
-          กรอก License Key ของคุณ
+          กรอก License Key ของคุณ (Format: J3ADQ-xxxx-xxxx-xxxx)
         </label>
         <div class="input-wrapper">
           <input 
             type="text" 
             id="licenseKeyInput" 
             class="key-input" 
-            placeholder="เช่น DAQ-1W-XXXX-YYYY หรือ DAQ-3D-..." 
-            maxlength="40"
+            placeholder="J3ADQ-XXXX-XXXX-XXXX" 
+            maxlength="36"
             autocomplete="off"
             spellcheck="false"
           >
@@ -617,12 +588,12 @@
       <aside class="disclaimer-card" aria-label="License Agreement">
         <div class="disclaimer-title">
           <span>🔒</span>
-          <span>ข้อตกลงและนโยบายสิทธิ์ (License Agreement)</span>
+          <span>ข้อตกลงและนโยบายสิทธิ์ (J3A Store License)</span>
         </div>
         <ul class="disclaimer-list">
-          <li>1 License Key ผูกสิทธิ์ 1:1 กับ Hardware ID (CPU + Motherboard + MAC) ประจำเครื่อง</li>
-          <li>สิทธิ์คีย์ 3 วัน (DAQ-3D-) จำกัดสิทธิ์ 1 ครั้งต่อ 1 เครื่องเท่านั้น</li>
-          <li>สั่งซื้อหรือต่ออายุคีย์ได้ที่: <a href="https://j3a-store.vercel.app" target="_blank" style="color:#00ffcc;text-decoration:underline;">https://j3a-store.vercel.app</a></li>
+          <li>1 License Key ผูกสิทธิ์ 1:1 กับ Hardware ID ประจำเครื่อง</li>
+          <li>แพ็กเกจ 3 วัน (3 Days Trial) จำกัดสิทธิ์ 1 ครั้งต่อ 1 เครื่องเท่านั้น</li>
+          <li>สั่งซื้อคีย์ หรือ ต่ออายุสิทธิ์ได้ที่: <a href="https://j3astore.com" target="_blank" style="color:#00ffcc;text-decoration:underline;">J3A Store (j3astore.com)</a></li>
         </ul>
       </aside>
 
@@ -635,8 +606,8 @@
         <span>ปิดโปรแกรม</span>
       </button>
       <button type="button" id="btnActivate" class="btn btn-submit">
-        <span id="submitIcon">🔑</span>
-        <span id="submitText">Activate / ตรวจสอบสิทธิ์</span>
+        <span id="submitIcon">🚀</span>
+        <span id="submitText">เปิดใช้งาน (Activate)</span>
       </button>
     </footer>
 
@@ -745,7 +716,8 @@
           const data = await res.json();
 
           if (res.ok && data && data.success === true) {
-            showSuccess(`เปิดใช้งานสำเร็จ! แพ็กเกจ: [${data.package}] เหลือเวลา: [${data.remainingText}] กำลังเข้าสู่ระบบ...`);
+            const badgeText = data.badge || (data.tierName ? `${data.tierName}` : 'เปิดใช้งานสำเร็จ');
+            showSuccess(`เปิดใช้งานสำเร็จ! [${badgeText}] กำลังเข้าสู่ระบบ...`);
             localStorage.setItem('license_verified', 'true');
             localStorage.setItem('license_key', rawKey);
 
@@ -753,7 +725,7 @@
               window.location.href = '/';
             }, 1000);
           } else {
-            const errorMsg = data?.message || 'ไม่สามารถเปิดใช้งานคีย์นี้ได้';
+            const errorMsg = data?.error || data?.message || 'License Key ไม่ถูกต้องหรือหมดอายุ';
             showError(errorMsg);
             licenseKeyInput.classList.add('input-error');
           }
@@ -802,8 +774,8 @@
         } else {
           btnActivate.disabled = false;
           licenseKeyInput.disabled = false;
-          submitIcon.innerHTML = '🔑';
-          submitText.textContent = 'Activate / ตรวจสอบสิทธิ์';
+          submitIcon.innerHTML = '🚀';
+          submitText.textContent = 'เปิดใช้งาน (Activate)';
         }
       }
     });
