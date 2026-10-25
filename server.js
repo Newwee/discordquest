@@ -964,6 +964,7 @@ const server = http.createServer(async (req, res) => {
     '/api/check-update',
     '/api/download-latest',
     '/api/auto-update',
+    '/api/just-updated',
     '/api/shutdown'
   ];
   if (pathname.startsWith('/api/') && !publicApiRoutes.includes(pathname)) {
@@ -1318,7 +1319,7 @@ const server = http.createServer(async (req, res) => {
 
       log('📦 ดาวน์โหลดเสร็จเรียบร้อย กำลังแตกไฟล์และติดตั้งอัปเดตแบบเงียบ...', 'info');
 
-      // Extract Setup.exe via PowerShell and run /silent
+      // Extract Setup.exe via PowerShell and run with GUI /update progress
       const extractScript = `
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $zip = "${zipPath.replace(/\\/g, '\\\\')}"
@@ -1326,14 +1327,14 @@ $dest = "${tempDir.replace(/\\/g, '\\\\')}"
 [System.IO.Compression.ZipFile]::ExtractToDirectory($zip, $dest)
 $setup = Join-Path $dest "Setup.exe"
 if (Test-Path $setup) {
-  Start-Process $setup -ArgumentList "/silent", "/dir=\`"${__dirname.replace(/\\/g, '\\\\')}\`""
+  Start-Process $setup -ArgumentList "/update", "/dir=\`"${__dirname.replace(/\\/g, '\\\\')}\`""
 }
 `;
       const scriptPath = path.join(tempDir, 'do_update.ps1');
       fs.writeFileSync(scriptPath, extractScript, 'utf8');
 
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify({ success: true, message: 'กำลังติดตั้งอัปเดตและรีสตาร์ทระบบ...' }));
+      res.end(JSON.stringify({ success: true, message: 'กำลังเปิดหน้าต่างอัปเดตระบบและปิดโปรแกรมเดิม...' }));
 
       // Run updater script detached and terminate current process so files can be replaced
       setTimeout(() => {
@@ -1348,6 +1349,27 @@ if (Test-Path $setup) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ success: false, error: updateErr.message }));
     }
+  }
+
+  // 4.8 Just-Updated Notification API (ส่งรายละเอียดให้แสดงเมื่อเปิดโปรแกรมกลับขึ้นมา)
+  if (pathname === '/api/just-updated' && req.method === 'GET') {
+    const updatedMarker = path.join(__dirname, 'just_updated.json');
+    if (fs.existsSync(updatedMarker)) {
+      try {
+        const raw = fs.readFileSync(updatedMarker, 'utf8');
+        const markerData = JSON.parse(raw);
+        try { fs.unlinkSync(updatedMarker); } catch {}
+        const localInfo = getLocalVersionInfo();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        return res.end(JSON.stringify({
+          justUpdated: true,
+          version: markerData.version || localInfo.version,
+          releaseNotes: localInfo.releaseNotes || []
+        }));
+      } catch (e) {}
+    }
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    return res.end(JSON.stringify({ justUpdated: false }));
   }
 
   // 5. Fetch Quests & Calculations (Cached & Rate-Limit Shielded)

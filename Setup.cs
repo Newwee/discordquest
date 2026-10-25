@@ -416,6 +416,7 @@ namespace DiscordQuestAutoInstaller
         static void Main(string[] args)
         {
             bool isSilent = false;
+            bool isUpdate = false;
             string customDir = null;
             if (args != null)
             {
@@ -424,6 +425,10 @@ namespace DiscordQuestAutoInstaller
                     if (string.Equals(a, "/silent", StringComparison.OrdinalIgnoreCase) || string.Equals(a, "/auto", StringComparison.OrdinalIgnoreCase))
                     {
                         isSilent = true;
+                    }
+                    else if (string.Equals(a, "/update", StringComparison.OrdinalIgnoreCase))
+                    {
+                        isUpdate = true;
                     }
                     else if (a.StartsWith("/dir=", StringComparison.OrdinalIgnoreCase))
                     {
@@ -440,6 +445,13 @@ namespace DiscordQuestAutoInstaller
 
             Application.EnableVisualStyles();
             Application.SetCompatibleTextRenderingDefault(false);
+
+            if (isUpdate)
+            {
+                Application.Run(new UpdateProgressForm(customDir));
+                return;
+            }
+
             Application.Run(new SetupForm());
         }
 
@@ -500,6 +512,250 @@ namespace DiscordQuestAutoInstaller
                 }
             }
             catch { }
+        }
+    }
+
+    public class UpdateProgressForm : Form
+    {
+        private ProgressBar progressBar;
+        private Label lblStatus;
+        private Label lblPercent;
+        private string targetDir;
+
+        public UpdateProgressForm(string dir)
+        {
+            this.targetDir = dir;
+            if (string.IsNullOrEmpty(this.targetDir))
+            {
+                this.targetDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "DiscordQuestAuto");
+            }
+            InitializeComponent();
+        }
+
+        private void InitializeComponent()
+        {
+            this.Text = "Discord Quest Auto Updater";
+            this.Size = new Size(540, 240);
+            this.StartPosition = FormStartPosition.CenterScreen;
+            this.FormBorderStyle = FormBorderStyle.FixedDialog;
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.BackColor = Color.FromArgb(18, 20, 32);
+            this.Font = new Font("Segoe UI", 9F, FontStyle.Regular);
+
+            try
+            {
+                if (File.Exists("icon.ico"))
+                {
+                    this.Icon = new Icon("icon.ico");
+                }
+            }
+            catch { }
+
+            Panel pnlHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 65,
+                BackColor = Color.FromArgb(12, 14, 24)
+            };
+
+            Label lblTitle = new Label
+            {
+                Text = "⚡ Discord Quest Auto - กำลังดำเนินการอัปเดตระบบ",
+                ForeColor = Color.FromArgb(0, 255, 204),
+                Font = new Font("Segoe UI", 11.5F, FontStyle.Bold),
+                Location = new Point(18, 12),
+                AutoSize = true
+            };
+
+            Label lblSub = new Label
+            {
+                Text = "ระบบกำลังติดตั้งเวอร์ชันล่าสุด v2.6.0 และจะเปิดโปรแกรมกลับขึ้นมาให้อัตโนมัติ...",
+                ForeColor = Color.FromArgb(160, 165, 185),
+                Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
+                Location = new Point(19, 36),
+                AutoSize = true
+            };
+
+            pnlHeader.Controls.Add(lblTitle);
+            pnlHeader.Controls.Add(lblSub);
+            this.Controls.Add(pnlHeader);
+
+            progressBar = new ProgressBar
+            {
+                Location = new Point(25, 95),
+                Size = new Size(475, 24),
+                Style = ProgressBarStyle.Continuous,
+                Value = 5
+            };
+            this.Controls.Add(progressBar);
+
+            lblStatus = new Label
+            {
+                Text = "กำลังเตรียมกระบวนการอัปเดต...",
+                Location = new Point(25, 130),
+                Size = new Size(400, 25),
+                ForeColor = Color.FromArgb(220, 225, 240),
+                Font = new Font("Segoe UI", 9F, FontStyle.Regular)
+            };
+            this.Controls.Add(lblStatus);
+
+            lblPercent = new Label
+            {
+                Text = "5%",
+                Location = new Point(430, 130),
+                Size = new Size(70, 25),
+                TextAlign = ContentAlignment.TopRight,
+                ForeColor = Color.FromArgb(0, 255, 204),
+                Font = new Font("Segoe UI", 9.5F, FontStyle.Bold)
+            };
+            this.Controls.Add(lblPercent);
+
+            this.Shown += UpdateProgressForm_Shown;
+        }
+
+        private void UpdateProgressForm_Shown(object sender, EventArgs e)
+        {
+            System.Windows.Forms.Timer updateTimer = new System.Windows.Forms.Timer();
+            updateTimer.Interval = 450;
+            int step = 0;
+
+            updateTimer.Tick += (s, ev) =>
+            {
+                step++;
+                if (step == 1)
+                {
+                    progressBar.Value = 25;
+                    lblPercent.Text = "25%";
+                    lblStatus.Text = "กำลังปิดโปรแกรมเวอร์ชันเก่า เพื่อปลดล็อกไฟล์ระบบ...";
+                    try
+                    {
+                        foreach (Process p in Process.GetProcessesByName("node"))
+                        {
+                            try { p.Kill(); } catch { }
+                        }
+                    }
+                    catch { }
+                }
+                else if (step == 2)
+                {
+                    progressBar.Value = 55;
+                    lblPercent.Text = "55%";
+                    lblStatus.Text = "กำลังแตกไฟล์แพ็กเกจเวอร์ชัน v2.6.0 และติดตั้งข้อมูลใหม่...";
+                    try
+                    {
+                        Directory.CreateDirectory(targetDir);
+                        Assembly asm = Assembly.GetExecutingAssembly();
+                        using (Stream stream = asm.GetManifestResourceStream("payload.zip"))
+                        {
+                            if (stream != null)
+                            {
+                                using (ZipArchive archive = new ZipArchive(stream))
+                                {
+                                    ExtractZipEntries(archive, targetDir);
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        lblStatus.Text = "การแตกไฟล์ผิดพลาด: " + ex.Message;
+                    }
+                }
+                else if (step == 3)
+                {
+                    progressBar.Value = 85;
+                    lblPercent.Text = "85%";
+                    lblStatus.Text = "กำลังบันทึกประวัติอัปเดตและทางลัดหน้าจอ...";
+                    try
+                    {
+                        // Write just_updated.json
+                        string marker = Path.Combine(targetDir, "just_updated.json");
+                        File.WriteAllText(marker, "{\"justUpdated\":true,\"version\":\"2.6.0\",\"date\":\"" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\"}");
+
+                        // Register shortcut
+                        string ps1 = Path.Combine(targetDir, "install_shortcut.ps1");
+                        if (File.Exists(ps1))
+                        {
+                            ProcessStartInfo psi = new ProcessStartInfo
+                            {
+                                FileName = "powershell.exe",
+                                Arguments = "-ExecutionPolicy Bypass -File \"" + ps1 + "\"",
+                                WindowStyle = ProcessWindowStyle.Hidden,
+                                WorkingDirectory = targetDir,
+                                CreateNoWindow = true
+                            };
+                            Process p = Process.Start(psi);
+                            if (p != null) p.WaitForExit(2000);
+                        }
+                    }
+                    catch { }
+                }
+                else if (step == 4)
+                {
+                    progressBar.Value = 100;
+                    lblPercent.Text = "100%";
+                    lblStatus.Text = "อัปเดตเสร็จสมบูรณ์ 100%! กำลังเปิดโปรแกรมกลับขึ้นมาใช้งาน...";
+                    lblStatus.ForeColor = Color.FromArgb(50, 255, 120);
+                }
+                else if (step == 5)
+                {
+                    updateTimer.Stop();
+                    // Launch updated program
+                    try
+                    {
+                        string vbs = Path.Combine(targetDir, "launch.vbs");
+                        if (File.Exists(vbs))
+                        {
+                            Process.Start(new ProcessStartInfo
+                            {
+                                FileName = "wscript.exe",
+                                Arguments = "\"" + vbs + "\"",
+                                WorkingDirectory = targetDir
+                            });
+                        }
+                        else
+                        {
+                            string bat = Path.Combine(targetDir, "start.bat");
+                            if (File.Exists(bat))
+                            {
+                                Process.Start(new ProcessStartInfo
+                                {
+                                    FileName = bat,
+                                    WorkingDirectory = targetDir
+                                });
+                            }
+                        }
+                    }
+                    catch { }
+
+                    System.Threading.Thread.Sleep(600);
+                    Application.Exit();
+                }
+            };
+
+            updateTimer.Start();
+        }
+
+        private static void ExtractZipEntries(ZipArchive archive, string destinationDir)
+        {
+            foreach (ZipArchiveEntry entry in archive.Entries)
+            {
+                string completeFileName = Path.GetFullPath(Path.Combine(destinationDir, entry.FullName));
+                if (string.IsNullOrEmpty(entry.Name))
+                {
+                    Directory.CreateDirectory(completeFileName);
+                }
+                else
+                {
+                    string directoryPath = Path.GetDirectoryName(completeFileName);
+                    if (!string.IsNullOrEmpty(directoryPath))
+                    {
+                        Directory.CreateDirectory(directoryPath);
+                    }
+                    entry.ExtractToFile(completeFileName, true);
+                }
+            }
         }
     }
 }

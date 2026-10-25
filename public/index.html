@@ -594,6 +594,45 @@
     </div>
   </div>
 
+  <!-- UPDATE SUCCESS MODAL (แสดงรายละเอียดเมื่อเปิดกลับขึ้นมาหลังอัปเดตเสร็จ) -->
+  <div id="updateSuccessModal" class="modal-backdrop hidden">
+    <div class="modal-card update-success-card border-beam-card">
+      <div class="modal-header">
+        <div class="modal-icon-shield icon-green">
+          <svg viewBox="0 0 24 24" width="28" height="28" fill="none" stroke="#23a55a" stroke-width="2.5">
+            <polyline points="20 6 9 17 4 12"/>
+          </svg>
+        </div>
+        <div>
+          <h3 class="shiny-text">🎉 อัปเดตโปรแกรมเป็นเวอร์ชันใหม่เรียบร้อย!</h3>
+          <p class="modal-subheading">ยินดีต้อนรับสู่ Discord Quest Auto <span id="successVersionTag" class="text-green font-bold">v2.6.0</span></p>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="success-banner-box">
+          <div class="success-headline">✨ ติดตั้งแพตช์และอัปเกรดระบบสำเร็จสมบูรณ์ 100%</div>
+          <div class="success-desc">ไฟล์ทั้งหมดได้รับการอัปเดตเป็นเวอร์ชันล่าสุด โครงสร้างความปลอดภัยและระบบเชื่อมต่อพร้อมทำงานทันที</div>
+        </div>
+
+        <div class="changelog-container" style="margin-top: 14px;">
+          <h4 class="changelog-title">📋 รายละเอียดสิ่งใหม่และการปรับปรุงในเวอร์ชันนี้:</h4>
+          <ul id="successChangelogList" class="changelog-list">
+            <li>🔑 <b>Next-Gen License Engine:</b> รองรับระบบ License ตรวจสอบสิทธิ์ผ่าน API ร้าน J3A Store (j3astore.com)</li>
+            <li>🔒 <b>Hardware ID Lock:</b> ผูกสิทธิ์ 1:1 กับเครื่องด้วย SHA-256 ป้องกันการวนใช้คีย์ทดลอง 3 วันซ้ำ</li>
+            <li>⚡ <b>Process Update Engine:</b> มีหน้าต่างแสดง Process Update ขณะติดตั้ง และเปิดกลับมาอัตโนมัติ</li>
+            <li>🛡️ <b>Anti-Reverse Engineering:</b> ป้องกันการแกะโค้ด และเข้ารหัส Local Storage ด้วย AES-256-GCM</li>
+            <li>🚨 <b>Emergency Siren Alert:</b> ปรับปรุงระบบแจ้งเตือนไฟกระพริบแดงฉุกเฉินและเสียงหวอแจ้งเตือน</li>
+          </ul>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button id="btnCloseUpdateSuccess" class="btn btn-primary btn-glow" style="width: 100%;">
+          🚀 เริ่มต้นใช้งานโปรแกรม
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ACCOUNT HISTORY & SWITCHER MODAL (ประวัติบัญชี) -->
   <div id="accountModal" class="modal-backdrop hidden">
     <div class="modal-card account-modal-card border-beam-card">

@@ -259,6 +259,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // Load app settings
   loadSettings();
 
+  // Check if program was just updated (แสดงรายละเอียด Release Notes เมื่อเปิดกลับขึ้นมา)
+  checkJustUpdated();
+
   // Check for updates silently in the background
   checkForUpdates(false);
 
@@ -773,7 +776,15 @@ function setupEventListeners() {
         if (!res.ok) throw new Error(data.error || 'ดาวน์โหลดไม่สำเร็จ');
 
         updateStatusBanner.className = 'update-status-banner success';
-        updateStatusText.textContent = '🚀 กำลังรีสตาร์ทโปรแกรมเป็นเวอร์ชันใหม่...';
+        updateStatusText.innerHTML = '🚀 กำลังเปิดหน้าต่าง Process Update และปิดโปรแกรมเดิม... กรุณารอสักครู่';
+
+        // Close update modal & strobe after 1.2s as Setup.exe /update takes over
+        setTimeout(() => {
+          if (updateModal) updateModal.classList.add('hidden');
+          if (screenStrobeOverlay) screenStrobeOverlay.classList.add('hidden');
+          stopEmergencySiren();
+          showLoader('ระบบกำลังอัปเดต...', 'โปรแกรมเดิมถูกปิดแล้ว หน้าต่าง Process Update กำลังทำงาน');
+        }, 1200);
 
         let retries = 0;
         const poll = setInterval(async () => {
@@ -785,12 +796,12 @@ function setupEventListeners() {
               location.reload();
             }
           } catch (e) {
-            if (retries > 30) {
+            if (retries > 45) {
               clearInterval(poll);
               location.reload();
             }
           }
-        }, 1200);
+        }, 1500);
       } catch (err) {
         updateStatusBanner.className = 'update-status-banner error';
         updateStatusText.textContent = `❌ อัปเดตไม่สำเร็จ: ${err.message}`;
@@ -1018,6 +1029,44 @@ function startUrgentCountdown(timerEl) {
   }
   tick();
   countdownInterval = setInterval(tick, 1000);
+}
+
+// --- Check if App was Just Updated (แสดงรายละเอียดเมื่อเปิดกลับขึ้นมาหลังอัปเดต) ---
+async function checkJustUpdated() {
+  const updateSuccessModal = document.getElementById('updateSuccessModal');
+  const btnCloseUpdateSuccess = document.getElementById('btnCloseUpdateSuccess');
+  const successVersionTag = document.getElementById('successVersionTag');
+  const successChangelogList = document.getElementById('successChangelogList');
+
+  if (btnCloseUpdateSuccess) {
+    btnCloseUpdateSuccess.addEventListener('click', () => {
+      if (updateSuccessModal) updateSuccessModal.classList.add('hidden');
+    });
+  }
+
+  try {
+    const res = await fetch('/api/just-updated');
+    if (!res.ok) return;
+    const data = await res.json();
+    if (data && data.justUpdated) {
+      if (successVersionTag) {
+        successVersionTag.textContent = `v${data.version || '2.6.0'}`;
+      }
+      if (successChangelogList && Array.isArray(data.releaseNotes) && data.releaseNotes.length > 0) {
+        successChangelogList.innerHTML = '';
+        data.releaseNotes.forEach(note => {
+          const li = document.createElement('li');
+          li.textContent = note;
+          successChangelogList.appendChild(li);
+        });
+      }
+      if (updateSuccessModal) {
+        updateSuccessModal.classList.remove('hidden');
+      }
+    }
+  } catch (e) {
+    console.warn('Check just-updated error:', e);
+  }
 }
 
 // --- Accounts History & Switcher Functions ---
