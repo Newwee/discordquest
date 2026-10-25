@@ -4,7 +4,8 @@
 (function verifyLicenseGuard() {
   const isVerified = localStorage.getItem('license_verified') === 'true';
   const savedKey = (localStorage.getItem('license_key') || '').trim().toUpperCase();
-  if (!isVerified || !savedKey.startsWith('J3ADQ-')) {
+  const isValidPrefix = savedKey.startsWith('DAQ-') || savedKey.startsWith('J3ADQ-');
+  if (!isVerified || !isValidPrefix) {
     window.location.replace('/license.html');
   }
 })();
@@ -283,25 +284,91 @@ function setupEventListeners() {
     });
   }
 
-  // 1.1 LICENSE STATUS & LOGOUT BUTTON
+  // 1.1 LICENSE STATUS & BOTTOM BAR ENGINE
   const btnLicenseStatus = document.getElementById('btnLicenseStatus');
-  if (btnLicenseStatus) {
-    const rawKey = (localStorage.getItem('license_key') || '').trim().toUpperCase();
-    const maskedKey = rawKey.length > 8 ? `${rawKey.slice(0, 7)}****${rawKey.slice(-4)}` : rawKey;
-    const navLicenseText = document.getElementById('navLicenseText');
-    if (navLicenseText && rawKey) {
-      navLicenseText.textContent = maskedKey;
-    }
+  const lbStatusText = document.getElementById('lbStatusText');
+  const lbPackageText = document.getElementById('lbPackageText');
+  const lbRemainingText = document.getElementById('lbRemainingText');
+  const lbStatusPill = document.getElementById('lbStatusPill');
+  const licenseExpiredModal = document.getElementById('licenseExpiredModal');
+  const btnSwitchExpiredKey = document.getElementById('btnSwitchExpiredKey');
 
+  let activeLicenseInfo = null;
+
+  async function syncLicenseStatus() {
+    try {
+      const res = await fetch('/api/license/status');
+      if (res.ok) {
+        const data = await res.json();
+        activeLicenseInfo = data;
+
+        if (data.activated && !data.expired) {
+          if (lbStatusText) lbStatusText.textContent = 'สถานะ: ใช้งานได้';
+          if (lbPackageText) lbPackageText.textContent = `[${data.package || data.badge || 'Standard'}]`;
+          if (lbRemainingText) lbRemainingText.textContent = `[${data.remainingText || '--'}]`;
+
+          if (lbStatusPill) {
+            const dot = lbStatusPill.querySelector('.status-dot');
+            if (dot) dot.classList.remove('expired');
+          }
+
+          const navLicenseText = document.getElementById('navLicenseText');
+          if (navLicenseText && data.maskedKey) {
+            navLicenseText.textContent = data.maskedKey;
+          }
+        } else {
+          // Expired or unlicensed
+          if (lbStatusText) lbStatusText.textContent = 'สถานะ: หมดอายุ';
+          if (lbPackageText) lbPackageText.textContent = `[${data.package || 'Expired'}]`;
+          if (lbRemainingText) lbRemainingText.textContent = '[หมดอายุแล้ว]';
+
+          if (lbStatusPill) {
+            const dot = lbStatusPill.querySelector('.status-dot');
+            if (dot) dot.classList.add('expired');
+          }
+
+          // Trigger Expiration Modal Popup
+          if (licenseExpiredModal && licenseExpiredModal.classList.contains('hidden')) {
+            licenseExpiredModal.classList.remove('hidden');
+          }
+        }
+      }
+    } catch (_) {}
+  }
+
+  // Initial check & interval every 20 seconds
+  syncLicenseStatus();
+  setInterval(syncLicenseStatus, 20000);
+
+  if (btnSwitchExpiredKey) {
+    btnSwitchExpiredKey.addEventListener('click', async () => {
+      try {
+        await fetch('/api/license/logout', { method: 'POST' });
+      } catch (_) {}
+      localStorage.removeItem('license_verified');
+      localStorage.removeItem('license_key');
+      window.location.href = '/license.html';
+    });
+  }
+
+  if (btnLicenseStatus) {
     btnLicenseStatus.addEventListener('click', () => {
-      const currentKey = localStorage.getItem('license_key') || 'ไม่มีข้อมูล';
+      const keyStr = activeLicenseInfo?.rawKey || localStorage.getItem('license_key') || 'ไม่มีข้อมูล';
+      const pkgStr = activeLicenseInfo?.package || 'Standard';
+      const remStr = activeLicenseInfo?.remainingText || '--';
+      const hwidStr = activeLicenseInfo?.hwid || 'N/A';
+
       const promptLogout = confirm(
-        `🔑 ข้อมูล License Key ของคุณ\n\n` +
-        `• คีย์ปัจจุบัน: ${currentKey}\n` +
-        `• สถานะ: เปิดใช้งานแล้ว (J3A Discord AutoQuest)\n\n` +
+        `🔑 ข้อมูลสิทธิ์ License Key (HWID Locked)\n\n` +
+        `• คีย์: ${keyStr}\n` +
+        `• แพ็กเกจ: ${pkgStr}\n` +
+        `• คงเหลือเวลา: ${remStr}\n` +
+        `• HWID: ${hwidStr.slice(0, 16)}...\n` +
+        `• ร้านค้า: https://j3a-store.vercel.app\n\n` +
         `ต้องการออกจากระบบเพื่อสลับเปลี่ยน License Key หรือไม่?`
       );
       if (promptLogout) {
+        fetch('/api/license/logout', { method: 'POST' }).catch(() => {});
         localStorage.removeItem('license_verified');
         localStorage.removeItem('license_key');
         window.location.href = '/license.html';

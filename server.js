@@ -6,14 +6,17 @@ const crypto = require('node:crypto');
 const { exec } = require('node:child_process');
 const {
   BASE_DIR,
-  LICENSE_KEY_FILE,
+  LICENSE_ENC_FILE,
+  STORE_URL,
   getSystemHWID,
   maskKey,
   isLicensed,
   getActiveKey,
+  getLicenseDetails,
   checkStoredLicense,
   activateLicenseKey,
-  logoutLicense
+  logoutLicense,
+  startLicenseWatcher
 } = require('./license_gate');
 const { findLocalDiscordToken } = require('./token_extractor');
 const {
@@ -759,6 +762,11 @@ async function runAutoQuests(token) {
         log(`▶️ กำลังจำลองการดูคลิปวิดีโอ (${secDone}/${target}s)...`, 'info');
 
         while (secDone < target) {
+          if (!isLicensed()) {
+            log('🔒 License หมดอายุหรือถูกระงับ: หยุดการทำงานทันที', 'error');
+            runnerState.shouldStop = true;
+            break;
+          }
           if (runnerState.shouldStop) break;
 
           await new Promise(r => setTimeout(r, step * 1000));
@@ -813,6 +821,11 @@ async function runAutoQuests(token) {
 
         try {
           while (secDone < target) {
+            if (!isLicensed()) {
+              log('🔒 License หมดอายุหรือถูกระงับ: หยุดการทำงานทันที', 'error');
+              runnerState.shouldStop = true;
+              break;
+            }
             if (runnerState.shouldStop) {
               log('⏹️ ผู้ใช้สั่งหยุดการทำงาน', 'warn');
               break;
@@ -1137,15 +1150,11 @@ const server = http.createServer(async (req, res) => {
 
   // 4.3.4 Get License Status
   if (pathname === '/api/license/status' && req.method === 'GET') {
-    const hwid = getSystemHWID();
-    const active = isLicensed();
-    const key = getActiveKey();
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    const details = getLicenseDetails();
+    res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify({
-      activated: active,
-      key: maskKey(key),
-      rawKey: key,
-      hwid
+      activated: details.active,
+      ...details
     }));
   }
 
@@ -1158,11 +1167,12 @@ const server = http.createServer(async (req, res) => {
       try { data = JSON.parse(body || '{}'); } catch {}
       const result = await activateLicenseKey(data.key);
       if (result.success) {
-        log(`🔑 เปิดใช้งาน License Key สำเร็จ: ${maskKey(result.key)}`, 'success');
-        res.writeHead(200, { 'Content-Type': 'application/json' });
+        log(`🔑 เปิดใช้งาน License Key สำเร็จ: ${maskKey(result.key)} [${result.package}]`, 'success');
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         return res.end(JSON.stringify(result));
       } else {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
+        log(`❌ เปิดใช้งาน License Key ล้มเหลว: ${result.message}`, 'error');
+        res.writeHead(400, { 'Content-Type': 'application/json; charset=utf-8' });
         return res.end(JSON.stringify(result));
       }
     });
@@ -1415,9 +1425,24 @@ server.listen(PORT, '127.0.0.1', () => {
 
   checkStoredLicense().then(result => {
     if (result.success) {
-      log(`🔑 License ผ่านการตรวจสอบแล้ว: ${maskKey(result.key)} (HWID: ${result.hwid})`, 'success');
+      log(`🔑 License ผ่านการตรวจสอบแล้ว: ${maskKey(result.key)} [${result.package || 'Active'}] (HWID: ${result.hwid})`, 'success');
+      log(`⏳ คงเหลือเวลาใช้งาน: ${result.remainingText}`, 'info');
     } else {
-      log(`🔒 ยังไม่ได้เปิดใช้งาน License Key กรุณาเปิดใช้งานที่หน้าต่างโปรแกรม http://localhost:${PORT}`, 'warn');
+      log(`🔒 ยังไม่ได้เปิดใช้งาน License Key หรือคีย์หมดอายุ กรุณาเปิดใช้งานที่หน้าต่างโปรแกรม http://localhost:${PORT}`, 'warn');
+    }
+  });
+
+  // รัน Background Watcher ตรวจสอบอายุคีย์ทุกๆ 30 นาที
+  startLicenseWatcher(expiredResult => {
+    log(`🔒 [LICENSE EXPIRED] ${expiredResult.message || 'คีย์ของคุณหมดอายุแล้ว'}`, 'error');
+    if (runnerState.isRunning) {
+      runnerState.shouldStop = true;
+      runnerState.isRunning = false;
+      if (activeFakeGame) {
+        killFakeGame(activeFakeGame);
+        activeFakeGame = null;
+      }
+      log('🛑 ระบบหยุดการทำเควสต์อัตโนมัติทันทีเนื่องจาก License หมดอายุ', 'warn');
     }
   });
 });

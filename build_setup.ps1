@@ -11,7 +11,6 @@ $filesToInclude = @(
     "token_extractor.js",
     "fake_game_spawner.js",
     "dummy_stub.exe",
-    "dummy_game.cs",
     "version.json",
     "launch.vbs",
     "start.bat",
@@ -28,6 +27,25 @@ Copy-Item (Join-Path $PSScriptRoot "config.example.json") -Destination (Join-Pat
 
 # Copy public folder
 Copy-Item -Recurse (Join-Path $PSScriptRoot "public") -Destination $targetDir
+
+# Anti-Reverse Engineering & Obfuscation Step
+Write-Host "Obfuscating JavaScript files with Anti-Reverse Engineering & Self-Defending..."
+$jsFilesToObfuscate = @(
+    (Join-Path $targetDir "server.js"),
+    (Join-Path $targetDir "license_gate.js"),
+    (Join-Path $targetDir "token_extractor.js"),
+    (Join-Path $targetDir "fake_game_spawner.js"),
+    (Join-Path $targetDir "public\app.js")
+)
+
+foreach ($jsPath in $jsFilesToObfuscate) {
+    if (Test-Path $jsPath) {
+        Write-Host "  -> Obfuscating $(Split-Path $jsPath -Leaf)..."
+        $obfCmd = "npx --yes javascript-obfuscator `"$jsPath`" --output `"$jsPath`" --compact true --control-flow-flattening true --control-flow-flattening-threshold 0.75 --string-array true --string-array-encoding rc4 --string-array-threshold 0.8 --split-strings true --self-defending true"
+        cmd.exe /c $obfCmd | Out-Null
+    }
+}
+Write-Host "Obfuscation complete! All proprietary code is secured."
 
 $payloadZip = Join-Path $PSScriptRoot "payload.zip"
 if (Test-Path $payloadZip) { Remove-Item -Force $payloadZip }

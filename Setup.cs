@@ -12,8 +12,8 @@ using System.Diagnostics;
 [assembly: AssemblyProduct("J3A Discord AutoQuest")]
 [assembly: AssemblyCopyright("Copyright © 2026 J3A Software Solutions")]
 [assembly: AssemblyTrademark("J3A")]
-[assembly: AssemblyVersion("2.5.0.0")]
-[assembly: AssemblyFileVersion("2.5.0.0")]
+[assembly: AssemblyVersion("2.6.0.0")]
+[assembly: AssemblyFileVersion("2.6.0.0")]
 
 namespace DiscordQuestAutoInstaller
 {
@@ -67,7 +67,7 @@ namespace DiscordQuestAutoInstaller
 
             Label lblTitle = new Label
             {
-                Text = "Discord Quest Auto v2.5 Setup",
+                Text = "Discord Quest Auto v2.6 Setup",
                 ForeColor = Color.FromArgb(0, 255, 204),
                 Font = new Font("Segoe UI", 12F, FontStyle.Bold),
                 Location = new Point(16, 12),

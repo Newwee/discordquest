@@ -1,15 +1,16 @@
 {
-  "version": "2.5.0",
+  "version": "2.6.0",
   "name": "Discord Quest Auto",
   "releaseDate": "2026-10-25",
   "githubRepo": "https://github.com/Newwee/discordquest",
   "downloadUrl": "https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip",
   "releaseNotes": [
-    "⚡ 1-Click In-App Auto Update: ระบบกดอัปเดตอัตโนมัติในคลิกเดียวจากในแอป ไม่ต้องดาวน์โหลดหรือแตกไฟล์เอง",
-    "🔍 Live Quest Search Box: ค้นหาเควสต์และชื่อเกมได้ทันทีแบบ Real-time",
-    "⏱️ Smart ETA Counter: แสดงเวลาที่เหลือก่อนเควสต์เสร็จเป็นนาทีแบบชัดเจน",
-    "🚀 Ultra-Smooth 60FPS UI: ปรับปรุงประสิทธิภาพ Spotlight Animation และ Render เควสต์ลื่นไหลไร้สะดุด",
-    "🎁 Quick Claim Action: เพิ่มปุ่มกดเปิด Discord ไปรับของรางวัลเควสต์ที่เสร็จแล้วได้ทันที",
-    "🔔 Sound & Finish Notification: เพิ่มเสียงแจ้งเตือนและข้อความเมื่อเควสต์ทั้งหมดรันเสร็จสมบูรณ์"
+    "🔒 Next-Gen License Engine: รองรับคีย์ DAQ-3D- (3 วัน), DAQ-1W- (1 สัปดาห์), DAQ-4W- (4 สัปดาห์), DAQ-6M- (6 เดือน)",
+    "🛡️ SHA-256 HWID Lock: ผูกสิทธิ์ 1:1 กับเครื่องด้วย CPU ID + Motherboard UUID + MAC Address อย่างแน่นหนา",
+    "🚫 Anti-Abuse Trial System: ป้องกันการวนใช้คีย์ทดลอง 3 วันซ้ำบนเครื่องเดิมอย่างเด็ดขาด",
+    "⏱️ Expiration Checker & Anti-Rollback: ตรวจสอบอายุคีย์ทุก 30 นาที พร้อมระบบป้องกันการโกงเวลาเครื่อง",
+    "🔐 Encrypted Local Storage: เข้ารหัสข้อมูลสิทธิ์ด้วย AES-256-GCM ป้องกันการแก้ไขไฟล์หรือบายพาส 100%",
+    "🛡️ Military-Grade Obfuscation: เข้ารหัสโค้ด JavaScript ด้วย RC4 String Encryption และ Self-Defending ป้องกัน Reverse Engineering",
+    "📊 Real-time License Status Bar: แถบสถานะด้านล่างโปรแกรมแสดงสถานะ, แพ็กเกจ และเวลานับถอยหลังที่เหลือ"
   ]
 }
