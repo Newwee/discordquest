@@ -570,6 +570,15 @@
             spellcheck="false"
           >
         </div>
+
+        <!-- Remember Key Option (ระบบจำ Key) -->
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 8px; font-size: 12px; color: var(--text-muted);">
+          <label style="display: flex; align-items: center; gap: 7px; cursor: pointer; user-select: none;">
+            <input type="checkbox" id="chkRememberKey" checked style="accent-color: var(--accent-purple); width: 15px; height: 15px; cursor: pointer;">
+            <span>จดจำ License Key บนเครื่องนี้ (ไม่ต้องกรอกซ้ำ)</span>
+          </label>
+          <button type="button" id="btnClearSavedKey" style="background: none; border: none; color: #f87171; font-size: 11.5px; cursor: pointer; text-decoration: underline; display: none;">ล้างคีย์ที่จำไว้</button>
+        </div>
       </div>
 
       <!-- Error Message Box -->
@@ -622,6 +631,8 @@
       const btnCopyHWID = document.getElementById('btnCopyHWID');
       const copyText = document.getElementById('copyText');
       const licenseKeyInput = document.getElementById('licenseKeyInput');
+      const chkRememberKey = document.getElementById('chkRememberKey');
+      const btnClearSavedKey = document.getElementById('btnClearSavedKey');
       const btnActivate = document.getElementById('btnActivate');
       const btnCloseApp = document.getElementById('btnCloseApp');
       const errorBox = document.getElementById('errorBox');
@@ -633,6 +644,16 @@
 
       let clientHWID = '';
 
+      // โหลด License Key ที่เคยจำไว้ในเครื่องทันที
+      function loadRememberedKey() {
+        const savedKey = localStorage.getItem('remembered_license_key') || localStorage.getItem('license_key') || '';
+        if (savedKey) {
+          licenseKeyInput.value = savedKey;
+          if (btnClearSavedKey) btnClearSavedKey.style.display = 'inline-block';
+        }
+      }
+      loadRememberedKey();
+
       // 1. ดึงค่า HWID และสถานะ License จากเครื่อง
       async function initLicenseState() {
         try {
@@ -643,11 +664,30 @@
               clientHWID = data.hwid;
               hwidDisplay.textContent = clientHWID;
             }
+
+            // ถ้ามี Key จาก Backend แล้วในช่องกรอกยังว่าง ให้เติมอัตโนมัติ
+            const effectiveKey = data.fullKey || data.rememberedKey || '';
+            if (effectiveKey && !licenseKeyInput.value) {
+              licenseKeyInput.value = effectiveKey;
+              localStorage.setItem('remembered_license_key', effectiveKey);
+              if (btnClearSavedKey) btnClearSavedKey.style.display = 'inline-block';
+            }
+
             if (data && data.activated && !data.expired) {
-              showSuccess(`ยืนยันสิทธิ์ถูกต้อง [${data.package}] กำลังเข้าสู่ระบบ...`);
+              const pkgName = data.tierName || data.package || data.badge || 'License';
+              showSuccess(`ยืนยันสิทธิ์ถูกต้อง [${pkgName}] กำลังเข้าสู่ระบบ...`);
+              
+              // ซิงค์สิทธิ์และคีย์ลงใน LocalStorage เพื่อไม่ให้เกิด Loop
+              localStorage.setItem('license_verified', 'true');
+              const keyToSave = effectiveKey || licenseKeyInput.value || '';
+              if (keyToSave) {
+                localStorage.setItem('license_key', keyToSave);
+                localStorage.setItem('remembered_license_key', keyToSave);
+              }
+
               setTimeout(() => {
-                window.location.href = '/';
-              }, 800);
+                window.location.replace('/');
+              }, 700);
             } else if (data && data.expired) {
               showError(`คีย์ของคุณหมดอายุแล้ว สามารถต่ออายุได้ที่ https://j3a-store.vercel.app`);
             }
@@ -684,6 +724,9 @@
         hideError();
         hideSuccess();
         e.target.value = e.target.value.toUpperCase().replace(/[^A-Z0-9-]/g, '').slice(0, 40);
+        if (btnClearSavedKey) {
+          btnClearSavedKey.style.display = e.target.value ? 'inline-block' : 'none';
+        }
       });
 
       licenseKeyInput.addEventListener('keydown', (e) => {
@@ -691,6 +734,17 @@
           btnActivate.click();
         }
       });
+
+      // ล้างคีย์ที่จำไว้
+      if (btnClearSavedKey) {
+        btnClearSavedKey.addEventListener('click', () => {
+          localStorage.removeItem('remembered_license_key');
+          localStorage.removeItem('license_key');
+          licenseKeyInput.value = '';
+          btnClearSavedKey.style.display = 'none';
+          licenseKeyInput.focus();
+        });
+      }
 
       // 4. Activate License via Server Backend
       btnActivate.addEventListener('click', async () => {
@@ -702,6 +756,14 @@
           showError('กรุณากรอก License Key ของคุณก่อนกดยืนยัน');
           licenseKeyInput.focus();
           return;
+        }
+
+        // บันทึกระบบจำคีย์
+        const shouldRemember = chkRememberKey ? chkRememberKey.checked : true;
+        if (shouldRemember) {
+          localStorage.setItem('remembered_license_key', rawKey);
+        } else {
+          localStorage.removeItem('remembered_license_key');
         }
 
         setLoading(true);
@@ -718,12 +780,17 @@
           if (res.ok && data && data.success === true) {
             const badgeText = data.badge || (data.tierName ? `${data.tierName}` : 'เปิดใช้งานสำเร็จ');
             showSuccess(`เปิดใช้งานสำเร็จ! [${badgeText}] กำลังเข้าสู่ระบบ...`);
+            
+            // บันทึกสถานะว่ายืนยันผ่านแล้ว
             localStorage.setItem('license_verified', 'true');
             localStorage.setItem('license_key', rawKey);
+            if (shouldRemember) {
+              localStorage.setItem('remembered_license_key', rawKey);
+            }
 
             setTimeout(() => {
-              window.location.href = '/';
-            }, 1000);
+              window.location.replace('/');
+            }, 800);
           } else {
             const errorMsg = data?.error || data?.message || 'License Key ไม่ถูกต้องหรือหมดอายุ';
             showError(errorMsg);
@@ -778,6 +845,8 @@
           submitText.textContent = 'เปิดใช้งาน (Activate)';
         }
       }
+    });
+  </script>
     });
   </script>
 </body>

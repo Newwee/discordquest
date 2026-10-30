@@ -1,18 +1,18 @@
 {
-  "version": "2.7.0",
+  "version": "2.7.1",
   "name": "Discord Quest Auto",
-  "releaseDate": "2026-10-25",
+  "releaseDate": "2026-10-30",
   "githubRepo": "https://github.com/Newwee/discordquest",
   "downloadUrl": "https://raw.githubusercontent.com/Newwee/discordquest/main/DiscordQuestAuto_Setup.zip",
-  "urgentNotice": "🎮 [อัปเดตใหม่ v2.7.0] รองรับ Fake Play Roblox ผ่านเควสต์ 700 Orbs และหน้าต่างจัดการ License Panel",
+  "urgentNotice": "🔑 [อัปเดตใหม่ v2.7.1] แก้ไขบั๊กหน้า License วนลูป (Infinite Loop) และเพิ่มระบบจดจำ License Key อัตโนมัติ",
   "deadlineHours": 67,
   "releaseNotes": [
+    "🛠️ [Fix License Infinite Loop] แก้ไขบั๊กการตรวจสอบสิทธิ์วนลูป (Infinite Redirect Loop) ระหว่างหน้ากรอกคีย์และหน้าหลัก 100%",
+    "🔑 [Remember License Key System] เพิ่มระบบจดจำ License Key อัตโนมัติบนเครื่อง ไม่ต้องคอยกรอกคีย์ใหม่ทุกครั้ง พร้อมปุ่มล้างคีย์ที่จำไว้",
+    "✨ [Fix Package Badge Display] แก้ไขข้อความ '[undefined]' ในแถบสถานะการยืนยันสิทธิ์ ให้แสดงชื่อแพ็กเกจถูกต้องแม่นยำ",
     "⚡ [1-Click In-Place Auto Updater] อัปเดตโปรแกรมอัตโนมัติในตัวคลิกเดียวแบบ DiscordProfile ไม่ต้องไปดาวน์โหลดไฟล์ใหม่เอง",
     "🎮 [Fake Play Roblox Engine] จำลองการเปิดเล่นเกม Roblox (RobloxPlayerBeta.exe) เพื่อทำเควสต์ในเครือ Roblox 700 Orbs (เช่น Scary Shawarma Kiosk) อัตโนมัติ โดยไม่ต้องโหลดเกมจริง",
     "🕹️ [Roblox Standalone Controls] เพิ่มปุ่มสวิตช์เปิด/ปิด Fake Play Roblox แยกอิสระบนแดชบอร์ด (0% CPU/RAM)",
-    "🎨 [Dark Glassmorphism License Panel] หน้าต่าง Panel จัดการสิทธิ์สุดหรู คัดลอกคีย์/HWID และสลับคีย์ได้ทันที",
-    "🚀 [GUI Update Wizard & Auto-Restart] หน้าต่าง Process Update พร้อม Progress Bar และรีสตาร์ทกลับมาเปิดอัตโนมัติ",
-    "🔒 [Next-Gen License & HWID Lock] รองรับระบบ License ร้าน J3A Store (j3astore.com) และผูกสิทธิ์ 1:1 ป้องกันคีย์หลุด",
-    "⚡⚡⚡ [กดปุ่ม '⚡ อัปเดตอัตโนมัติทันที' เพื่ออัปเกรดเป็น v2.7.0 ในคลิกเดียวทันที!] ⚡⚡⚡"
+    "🎨 [Dark Glassmorphism License Panel] หน้าต่าง Panel จัดการสิทธิ์สุดหรู คัดลอกคีย์/HWID และสลับคีย์ได้ทันที"
   ]
 }

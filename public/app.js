@@ -1,15 +1,6 @@
 // Discord Quest Auto Client Application (ReactBits Edition)
 
-// --- License Key Protection Guard ---
-(function verifyLicenseGuard() {
-  const isVerified = localStorage.getItem('license_verified') === 'true';
-  const savedKey = (localStorage.getItem('license_key') || '').trim().toUpperCase();
-  const isValidPrefix = savedKey.startsWith('DAQ-') || savedKey.startsWith('J3ADQ-');
-  if (!isVerified || !isValidPrefix) {
-    window.location.replace('/license.html');
-  }
-})();
-
+// --- License Key Protection & Sync Engine ---
 let currentQuests = [];
 let activeTab = 'active';
 let isRunning = false;
@@ -418,7 +409,21 @@ function setupEventListeners() {
           modalHwidText.textContent = data.hwid;
         }
 
-        if (data.activated && data.badge) {
+        // ระบบจำ Key: โหลดใส่ช่องกรอกใน Modal อัตโนมัติหากยังว่าง
+        const rememberedKey = data.fullKey || data.rememberedKey || localStorage.getItem('remembered_license_key') || localStorage.getItem('license_key') || '';
+        if (modalLicenseInput && rememberedKey && !modalLicenseInput.value) {
+          modalLicenseInput.value = rememberedKey;
+        }
+
+        if (data.activated && !data.expired) {
+          // ซิงค์สิทธิ์ลงใน LocalStorage
+          localStorage.setItem('license_verified', 'true');
+          const validKey = data.fullKey || data.key || rememberedKey;
+          if (validKey) {
+            localStorage.setItem('license_key', validKey);
+            localStorage.setItem('remembered_license_key', validKey);
+          }
+
           // สิทธิ์ถูกต้อง: ปิด Activation Modal และอัปเดต Header Badge
           if (licenseActivationModal && !licenseActivationModal.classList.contains('hidden')) {
             licenseActivationModal.classList.add('hidden');
@@ -428,7 +433,7 @@ function setupEventListeners() {
           }
 
           if (headerBadgeText) {
-            headerBadgeText.textContent = data.badge;
+            headerBadgeText.textContent = data.badge || data.tierName || '🟢 License Active';
           }
 
           if (lbStatusText) lbStatusText.textContent = 'สถานะ: ใช้งานได้';
@@ -443,7 +448,9 @@ function setupEventListeners() {
             if (dot) dot.classList.remove('expired');
           }
         } else {
-          // ยังไม่ได้ Activate หรือหมดอายุ: ห้ามเข้าหน้าหลัก แสดง Modal Activation ทันที
+          // ยังไม่ได้ Activate หรือหมดอายุ: ห้ามเข้าหน้าหลัก
+          localStorage.removeItem('license_verified');
+
           if (headerBadgeText) {
             headerBadgeText.textContent = '🔒 ยังไม่ได้เปิดใช้งาน';
           }
@@ -456,8 +463,15 @@ function setupEventListeners() {
             if (dot) dot.classList.add('expired');
           }
 
-          if (licenseActivationModal && licenseActivationModal.classList.contains('hidden')) {
-            licenseActivationModal.classList.remove('hidden');
+          // แสดง Modal แจ้งเตือนสิทธิ์
+          if (data.expired) {
+            if (licenseExpiredModal && licenseExpiredModal.classList.contains('hidden')) {
+              licenseExpiredModal.classList.remove('hidden');
+            }
+          } else {
+            if (licenseActivationModal && licenseActivationModal.classList.contains('hidden')) {
+              licenseActivationModal.classList.remove('hidden');
+            }
           }
         }
       }
@@ -542,6 +556,7 @@ function setupEventListeners() {
 
           localStorage.setItem('license_verified', 'true');
           localStorage.setItem('license_key', rawKey);
+          localStorage.setItem('remembered_license_key', rawKey);
 
           setTimeout(() => {
             if (licenseActivationModal) licenseActivationModal.classList.add('hidden');

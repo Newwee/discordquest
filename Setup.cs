@@ -12,8 +12,8 @@ using System.Diagnostics;
 [assembly: AssemblyProduct("J3A Discord AutoQuest")]
 [assembly: AssemblyCopyright("Copyright © 2026 J3A Software Solutions")]
 [assembly: AssemblyTrademark("J3A")]
-[assembly: AssemblyVersion("2.7.0.0")]
-[assembly: AssemblyFileVersion("2.7.0.0")]
+[assembly: AssemblyVersion("2.7.1.0")]
+[assembly: AssemblyFileVersion("2.7.1.0")]
 
 namespace DiscordQuestAutoInstaller
 {
@@ -406,7 +406,7 @@ namespace DiscordQuestAutoInstaller
                     // Preserves user config and license so existing accounts/keys are never erased
                     if (File.Exists(completeFileName))
                     {
-                        if (fileName == "config.json" || fileName == "license.key")
+                        if (fileName == "config.json" || fileName == "license.key" || fileName == "license.json" || fileName == "license.dat")
                         {
                             continue;
                         }
@@ -595,7 +595,7 @@ namespace DiscordQuestAutoInstaller
 
             Label lblSub = new Label
             {
-                Text = "ระบบกำลังติดตั้งเวอร์ชันล่าสุด v2.7.0 และจะเปิดโปรแกรมกลับขึ้นมาให้อัตโนมัติ...",
+                Text = "ระบบกำลังติดตั้งเวอร์ชันล่าสุด v2.7.1 และจะเปิดโปรแกรมกลับขึ้นมาให้อัตโนมัติ...",
                 ForeColor = Color.FromArgb(160, 165, 185),
                 Font = new Font("Segoe UI", 8.5F, FontStyle.Regular),
                 Location = new Point(19, 36),
@@ -666,7 +666,7 @@ namespace DiscordQuestAutoInstaller
                 {
                     progressBar.Value = 55;
                     lblPercent.Text = "55%";
-                    lblStatus.Text = "กำลังแตกไฟล์แพ็กเกจเวอร์ชัน v2.7.0 และติดตั้งข้อมูลใหม่...";
+                    lblStatus.Text = "กำลังแตกไฟล์แพ็กเกจเวอร์ชัน v2.7.1 และติดตั้งข้อมูลใหม่...";
                     try
                     {
                         Directory.CreateDirectory(targetDir);
@@ -719,7 +719,7 @@ namespace DiscordQuestAutoInstaller
                     {
                         // Write just_updated.json
                         string marker = Path.Combine(targetDir, "just_updated.json");
-                        File.WriteAllText(marker, "{\"justUpdated\":true,\"version\":\"2.7.0\",\"date\":\"" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\"}");
+                        File.WriteAllText(marker, "{\"justUpdated\":true,\"version\":\"2.7.1\",\"date\":\"" + DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss") + "\"}");
 
                         // Register shortcut
                         string ps1 = Path.Combine(targetDir, "install_shortcut.ps1");
@@ -800,7 +800,7 @@ namespace DiscordQuestAutoInstaller
                     // Preserves user config and license so existing accounts/keys are never erased
                     if (File.Exists(completeFileName))
                     {
-                        if (fileName == "config.json" || fileName == "license.key")
+                        if (fileName == "config.json" || fileName == "license.key" || fileName == "license.json" || fileName == "license.dat")
                         {
                             continue;
                         }

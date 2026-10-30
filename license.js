@@ -185,6 +185,7 @@ async function verifyOrActivateKey(inputKey) {
 
       return {
         success: true,
+        key: keyToTest,
         action: data.action,
         tier: data.tier,
         tierName: data.tierName,

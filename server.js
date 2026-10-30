@@ -32,8 +32,21 @@ const {
   ROBLOX_APP_ID
 } = require('./fake_game_spawner');
 
+// Synchronously initialize license state from local cache if valid and not expired
+const initialCachedLicense = loadLocalLicense();
+const initialMachineHwid = getMachineHWID();
 let isLicenseActive = false;
 let currentLicenseData = null;
+
+if (initialCachedLicense && initialCachedLicense.key && initialCachedLicense.expiresAt) {
+  const expiresMs = new Date(initialCachedLicense.expiresAt).getTime();
+  const isNotExpired = !isNaN(expiresMs) && expiresMs > Date.now();
+  const hwidMatches = !initialCachedLicense.hwid || initialCachedLicense.hwid === initialMachineHwid;
+  if (isNotExpired && hwidMatches) {
+    isLicenseActive = true;
+    currentLicenseData = initialCachedLicense;
+  }
+}
 
 function isLicensed() {
   return isLicenseActive;
@@ -1190,17 +1203,22 @@ const server = http.createServer(async (req, res) => {
   if (pathname === '/api/license/status' && req.method === 'GET') {
     const cached = loadLocalLicense();
     const hwid = getMachineHWID();
-    const badge = getLicenseBadge(currentLicenseData || cached);
+    const effectiveLicense = currentLicenseData || cached;
+    const badge = getLicenseBadge(effectiveLicense);
+    const activeKey = currentLicenseData?.key || cached?.key || effectiveLicense?.key || '';
+    const packageName = effectiveLicense?.tierName || effectiveLicense?.tier || 'License';
     res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
     return res.end(JSON.stringify({
       activated: isLicenseActive,
       hwid: hwid,
-      key: (currentLicenseData?.key || cached?.key) ? maskKey(currentLicenseData?.key || cached?.key) : '',
-      fullKey: currentLicenseData?.key || cached?.key || '',
-      tier: currentLicenseData?.tier || cached?.tier || '',
-      tierName: currentLicenseData?.tierName || cached?.tierName || '',
-      remainingDays: currentLicenseData?.remainingDays ?? cached?.remainingDays,
-      expiresAt: currentLicenseData?.expiresAt || cached?.expiresAt,
+      key: activeKey ? maskKey(activeKey) : '',
+      fullKey: activeKey,
+      rememberedKey: activeKey,
+      tier: effectiveLicense?.tier || '',
+      tierName: effectiveLicense?.tierName || packageName,
+      package: packageName,
+      remainingDays: effectiveLicense?.remainingDays,
+      expiresAt: effectiveLicense?.expiresAt,
       badge: badge.text,
       badgeData: badge,
       storeUrl: STORE_WEB_URL
@@ -1219,11 +1237,13 @@ const server = http.createServer(async (req, res) => {
         currentLicenseData = result;
         isLicenseActive = true;
         const badge = getLicenseBadge(result);
+        const packageName = result.tierName || result.tier || 'License';
         log(`🔑 เปิดใช้งาน License Key สำเร็จ: ${badge.text}`, 'success');
         res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
         return res.end(JSON.stringify({
           success: true,
           ...result,
+          package: packageName,
           badge: badge.text,
           badgeData: badge
         }));
